@@ -10,9 +10,10 @@ on:
 jobs:
   test-and-commit:
     runs-on: ubuntu-latest
-    container:
-      image: python:3.13-slim
-      options: --workdir /github/workspace  # sets working directory inside container
+  container:
+    image: python:3.13-slim
+    options: --workdir /github/workspace/kubernetes-project
+
 
     steps:
       # Checkout the repository
@@ -34,9 +35,10 @@ jobs:
           pip install pytest
 
       # Run unit tests inside Docker
-      - name: Run unit tests
+      - name: Run unit tests in Docker
         run: |
-          PYTHONPATH=/github/workspace pytest
+          PYTHONPATH=. pytest
+
 
       # Commit changes if tests pass (runs on host, not inside container)
       - name: Commit changes
