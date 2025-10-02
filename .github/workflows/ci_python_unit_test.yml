@@ -10,9 +10,9 @@ on:
 jobs:
   test-and-commit:
     runs-on: ubuntu-latest
-  container:
-    image: python:3.13-slim
-    options: --workdir /github/workspace/kubernetes-project
+    container:
+      image: python:3.13-slim
+      options: --workdir /github/workspace/kubernetes-project
 
 
     steps:
