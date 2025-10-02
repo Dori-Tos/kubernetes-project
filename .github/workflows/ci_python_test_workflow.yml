@@ -27,7 +27,7 @@ jobs:
       # Run unit tests
       - name: Run unit tests
         run: |
-          python -m unittest discover -s tests
+          PYTHONPATH=. pytest
 
       # Commit changes if tests pass
       - name: Commit changes
