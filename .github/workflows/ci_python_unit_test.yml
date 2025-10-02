@@ -22,14 +22,15 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: python:3.13-slim
-          options: -v ${{ github.workspace }}:/github/workspace --workdir /github/workspace/kubernetes-project
+          options: -v ${{ github.workspace }}:/github/workspace --workdir /github/workspace
           run: |
             apt-get update
             DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
             python -m pip install --upgrade pip
+            cd kubernetes-project
             if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
             pip install pytest
-            PYTHONPATH=. pytest -v tests
+            PYTHONPATH=. pytest -v test
 
       # Commit changes on host runner (Git is available)
       - name: Commit changes
