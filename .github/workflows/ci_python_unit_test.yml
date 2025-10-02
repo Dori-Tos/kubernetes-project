@@ -10,28 +10,35 @@ on:
 jobs:
   test-and-commit:
     runs-on: ubuntu-latest
+    container:
+      image: python:3.13-slim
+      options: --workdir /github/workspace  # sets working directory inside container
 
     steps:
-      # Checkout the repo
+      # Checkout the repository
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # Needed for committing back
 
-      # Run tests inside Docker container
-      - name: Run unit tests in Docker
-        uses: addnab/docker-run-action@v3
-        with:
-          image: python:3.13-slim
-          options: -v ${{ github.workspace }}:/github/workspace
-          run: |
-            apt-get update
-            apt-get install -y python3-pip
-            pip install --upgrade pip
-            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-            pip install pytest
-            PYTHONPATH=/github/workspace pytest
+      # Install system dependencies inside the container
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
 
-      # Commit changes if tests pass (outside container)
+      # Install Python dependencies
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest
+
+      # Run unit tests inside Docker
+      - name: Run unit tests
+        run: |
+          PYTHONPATH=/github/workspace pytest
+
+      # Commit changes if tests pass (runs on host, not inside container)
       - name: Commit changes
         if: success()
         run: |
