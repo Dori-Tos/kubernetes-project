@@ -10,6 +10,7 @@ on:
 jobs:
   test-and-commit:
     runs-on: ubuntu-latest
+    container: python:3.13-slim   # 👈 Run everything inside this container
 
     steps:
       # Checkout repository
@@ -17,17 +18,11 @@ jobs:
         with:
           fetch-depth: 0   # Important if we want to push commits
 
-      # Setup Python
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
       # Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       # Run unit tests
       - name: Run unit tests
