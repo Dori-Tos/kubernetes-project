@@ -29,7 +29,7 @@ jobs:
             python -m pip install --upgrade pip
             if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
             pip install pytest
-            PYTHONPATH=. pytest
+            PYTHONPATH=. pytest -v tests
 
       # Commit changes on host runner (Git is available)
       - name: Commit changes
