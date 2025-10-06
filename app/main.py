@@ -14,5 +14,9 @@ def actors():
 def reviews():
     return "List of reviews will be here."
 
+@app.route("/settings")
+def settings():
+    return "List of settings."
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
