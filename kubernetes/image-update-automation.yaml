@@ -1,0 +1,24 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: movie-rating-automation
+  namespace: flux-system
+spec:
+  interval: 1m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system  # or your specific GitRepository name
+  git:
+    checkout:
+      ref:
+        branch: dev-main
+    commit:
+      author:
+        name: flux-bot
+        email: flux@example.com
+      messageTemplate: "chore: update movie-rating image to {{ .ImageRef }}"
+    push:
+      branch: dev-main
+  update:
+    path: ./kubernetes  # path where your Deployment YAML lives
+    strategy: Setters

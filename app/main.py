@@ -4,7 +4,7 @@ app = flask.Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Hello, World! This is a DB Service for movies."
+    return "Hello, World! This is a DB Service for movies. FluxCD is working!"
 
 @app.route("/actors")
 def actors():
