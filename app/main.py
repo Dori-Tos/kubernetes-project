@@ -4,7 +4,7 @@ app = flask.Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Hello, World! This is a DB Service for movies. FluxCD is working I think"
+    return "Hello, World! This is a DB Service for movies. FluxCD is working I think But you need to disable the cache in the browser to see the changes."
 
 @app.route("/actors")
 def actors():
