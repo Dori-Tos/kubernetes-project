@@ -3,26 +3,19 @@ kind: Deployment
 metadata:
   name: movie-rating
   namespace: default
-  annotations:
-    # Tell Flux to update this image automatically
-    fluxcd.io/set-image: "movie-rating=arthurvb/movie-rating:latest"
 spec:
   replicas: 3
   selector:
     matchLabels:
       app: movie-rating
   template:
-    spec:
-      containers:
-        - name: movie-rating
-          image: arthurvb/movie-rating:latest # {"$imagepolicy": "flux-system:movie-rating-policy"}
     metadata:
       labels:
         app: movie-rating
     spec:
       containers:
         - name: movie-rating
-          image: arthurvb/movie-rating:latest
+          image: arthurvb/movie-rating:latest # {"$imagepolicy": "flux-system:movie-rating-policy"}
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

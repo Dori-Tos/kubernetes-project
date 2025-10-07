@@ -7,7 +7,7 @@ spec:
   interval: 1m
   sourceRef:
     kind: GitRepository
-    name: flux-system  # or your specific GitRepository name
+    name: flux-system
   git:
     checkout:
       ref:
@@ -16,9 +16,12 @@ spec:
       author:
         name: flux-bot
         email: flux@example.com
-      messageTemplate: "chore: update movie-rating image to {{ .ImageRef }}"
+      messageTemplate: |
+        chore: update movie-rating image
+        
+        Automation name: {{ .AutomationObject }}
     push:
       branch: dev-main
   update:
-    path: ./kubernetes  # path where your Deployment YAML lives
+    path: ./kubernetes
     strategy: Setters
