@@ -8,4 +8,7 @@ spec:
     name: movie-rating
   policy:
     semver:
-      range: '>=0.0.0'
+      range: '>=0.0.0-0'  # This will match any semver-like tag
+  filterTags:
+    pattern: '^[a-f0-9]{7}$'  # Only consider 7-char SHA tags
+    extract: '$0'

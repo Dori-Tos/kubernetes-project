@@ -67,6 +67,5 @@ jobs:
         run: |
           IMAGE=arthurvb/movie-rating
           TAG=${GITHUB_SHA::7}
-          docker build -t $IMAGE:$TAG -t $IMAGE:latest .
+          docker build -t $IMAGE:$TAG .
           docker push $IMAGE:$TAG
-          docker push $IMAGE:latest
