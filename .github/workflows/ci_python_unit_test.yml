@@ -63,9 +63,27 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Determine next version
+        id: version
+        run: |
+          # Get the latest semver tag from Docker Hub (or start at v1.0.0)
+          IMAGE=arthurvb/movie-rating
+          CURRENT_TAG=$(curl -s "https://hub.docker.com/v2/repositories/${IMAGE}/tags/?page_size=100" | jq -r '.results[].name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          echo "Current tag: $CURRENT_TAG"
+          if [ -z "$CURRENT_TAG" ]; then
+            NEW_TAG="v1.0.0"
+          else
+            MAJOR=$(echo $CURRENT_TAG | cut -d. -f1 | tr -d v)
+            MINOR=$(echo $CURRENT_TAG | cut -d. -f2)
+            PATCH=$(echo $CURRENT_TAG | cut -d. -f3)
+            NEW_TAG="v${MAJOR}.$MINOR.$((PATCH+1))"
+          fi
+          echo "New tag: $NEW_TAG"
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
       - name: Build and Push Docker Image
         run: |
           IMAGE=arthurvb/movie-rating
-          TAG=${GITHUB_SHA::7}
+          TAG=${{ steps.version.outputs.tag }}
           docker build -t $IMAGE:$TAG .
           docker push $IMAGE:$TAG
