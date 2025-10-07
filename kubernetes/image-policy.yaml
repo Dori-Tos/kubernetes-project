@@ -7,8 +7,7 @@ spec:
   imageRepositoryRef:
     name: movie-rating
   policy:
-    semver:
-      range: '>=0.0.0-0'  # This will match any semver-like tag
+    alphabetical:
+      order: asc
   filterTags:
-    pattern: '^[a-f0-9]{7}$'  # Only consider 7-char SHA tags
-    extract: '$0'
+    pattern: '^[a-f0-9]{7}$'  # Only match 7-character SHA tags, ignore "latest"
