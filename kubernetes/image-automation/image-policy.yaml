@@ -7,6 +7,7 @@ spec:
   imageRepositoryRef:
     name: movie-rating
   policy:
-    latest: {}
+    semver:
+      range: "*"   # Pick the highest semantic version available
   filterTags:
-    pattern: '^[a-f0-9]{7}$'
+    pattern: '^v[0-9]+\.[0-9]+\.[0-9]+$'  # Match v1.2.3 style tags only
