@@ -7,7 +7,6 @@ spec:
   imageRepositoryRef:
     name: movie-rating
   policy:
-    alphabetical:
-      order: asc
+    latest: {}
   filterTags:
-    pattern: '^[a-f0-9]{7}$'  # Only match 7-character SHA tags, ignore "latest"
+    pattern: '^[a-f0-9]{7}$'
