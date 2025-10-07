@@ -12,6 +12,10 @@ spec:
     matchLabels:
       app: movie-rating
   template:
+    spec:
+      containers:
+        - name: movie-rating
+          image: arthurvb/movie-rating:latest # {"$imagepolicy": "flux-system:movie-rating-policy"}
     metadata:
       labels:
         app: movie-rating
