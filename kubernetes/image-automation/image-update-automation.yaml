@@ -21,7 +21,7 @@ spec:
         
         Automation name: {{ .AutomationObject }}
     push:
-      branch: dev-main
+      branch: test
   update:
     path: ./kubernetes
     strategy: Setters
