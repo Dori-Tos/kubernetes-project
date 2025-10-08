@@ -4,7 +4,7 @@ metadata:
   name: movie-rating-automation
   namespace: flux-system
 spec:
-  suspend: true
+  suspend: false
   interval: 1m
   sourceRef:
     kind: GitRepository
@@ -18,11 +18,11 @@ spec:
         email: fluxcdbot@users.noreply.github.com
         name: fluxcdbot
       messageTemplate: |
-        chore: update movie-rating image
+        chore: update movie-rating image [skip ci]
         
         Automation name: {{ .AutomationObject }}
     push:
-      branch: test
+      branch: dev-main  # Push to same branch but with [skip ci]
   update:
     path: ./kubernetes
     strategy: Setters
