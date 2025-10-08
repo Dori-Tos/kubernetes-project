@@ -18,7 +18,7 @@ except Exception as e:
 
 @app.route("/")
 def home():
-    return "Hello, World! This is a DB Service for movies."
+    return "Hello, World! This is a DB Service for movies. I want to see this change made at 20:58 on 07/10/2025 - haha"
 
 @app.route("/actors")
 def actors():
@@ -58,6 +58,10 @@ def health():
         return "Healthy - Database connected"
     except Exception as e:
         return f"Unhealthy - Database error: {str(e)}", 500
+
+@app.route("/settings")
+def settings():
+    return "List of settings."
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

@@ -1,0 +1,27 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: movie-rating-automation
+  namespace: flux-system
+spec:
+  interval: 1m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: dev-main
+    commit:
+      author:
+        name: flux-bot
+        email: flux@example.com
+      messageTemplate: |
+        chore: update movie-rating image
+        
+        Automation name: {{ .AutomationObject }}
+    push:
+      branch: dev-main
+  update:
+    path: ./kubernetes
+    strategy: Setters

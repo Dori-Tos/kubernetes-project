@@ -1,0 +1,8 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: movie-rating
+  namespace: flux-system
+spec:
+  image: docker.io/arthurvb/movie-rating
+  interval: 1m  # check Docker Hub every minute

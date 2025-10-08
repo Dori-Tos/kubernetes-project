@@ -1,0 +1,13 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: movie-rating-policy
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: movie-rating
+  policy:
+    semver:
+      range: "*"   # Pick the highest semantic version available
+  filterTags:
+    pattern: '^v[0-9]+\.[0-9]+\.[0-9]+$'  # Match v1.2.3 style tags only

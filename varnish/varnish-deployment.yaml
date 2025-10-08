@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: varnish-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: varnish
+  template:
+    metadata:
+      labels:
+        app: varnish
+    spec:
+      containers:
+      - name: varnish
+        image: varnish-cache:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: varnish-service
+spec:
+  selector:
+    app: varnish
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
