@@ -3,25 +3,26 @@ kind: ImageUpdateAutomation
 metadata:
   name: movie-rating-automation
   namespace: flux-system
-# spec:
-#   interval: 1m
-#   sourceRef:
-#     kind: GitRepository
-#     name: flux-system
-#   git:
-#     checkout:
-#       ref:
-#         branch: dev-main
-#     commit:
-#       author:
-#         email: fluxcdbot@users.noreply.github.com
-#         name: fluxcdbot
-#       messageTemplate: |
-#         chore: update movie-rating image
+spec:
+  suspend: true
+  interval: 1m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: dev-main
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: |
+        chore: update movie-rating image
         
-#         Automation name: {{ .AutomationObject }}
-#     push:
-#       branch: test
-#   update:
-#     path: ./kubernetes
-#     strategy: Setters
+        Automation name: {{ .AutomationObject }}
+    push:
+      branch: test
+  update:
+    path: ./kubernetes
+    strategy: Setters
