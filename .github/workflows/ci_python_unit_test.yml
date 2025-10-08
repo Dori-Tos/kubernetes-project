@@ -51,7 +51,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     needs: test-and-commit   # 👈 ensures tests must pass before build
-    
+
     if: "!contains(github.event.head_commit.message, '[skip ci]') && github.event.head_commit.author.email != 'fluxcdbot@users.noreply.github.com'"
 
     steps:
@@ -71,24 +71,53 @@ jobs:
       - name: Determine next version
         id: version
         run: |
-          # Get the latest semver tag from Docker Hub (or start at v1.0.0)
-          IMAGE=docker.io/arthurvb/movie-rating
-          CURRENT_TAG=$(curl -s "https://hub.docker.com/v2/repositories/${IMAGE}/tags/?page_size=100" | jq -r '.results[].name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
-          echo "Current tag: $CURRENT_TAG"
-          if [ -z "$CURRENT_TAG" ]; then
+          # Get the latest semver tag from Docker Hub
+          REPO="arthurvb/movie-rating"
+          
+          echo "Fetching tags from Docker Hub for $REPO..."
+          
+          # Fetch tags from Docker Hub API with error handling
+          RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${REPO}/tags/?page_size=100")
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to fetch tags from Docker Hub, starting with v1.0.0"
             NEW_TAG="v1.0.0"
           else
-            MAJOR=$(echo $CURRENT_TAG | cut -d. -f1 | tr -d v)
-            MINOR=$(echo $CURRENT_TAG | cut -d. -f2)
-            PATCH=$(echo $CURRENT_TAG | cut -d. -f3)
-            NEW_TAG="v${MAJOR}.$MINOR.$((PATCH+1))"
+            # Extract semver tags and find the latest
+            CURRENT_TAG=$(echo "$RESPONSE" | jq -r '.results[]?.name // empty' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+            
+            echo "Latest semver tag found: $CURRENT_TAG"
+            
+            if [ -z "$CURRENT_TAG" ] || [ "$CURRENT_TAG" = "null" ]; then
+              echo "No existing semver tags found, starting with v1.0.0"
+              NEW_TAG="v1.0.0"
+            else
+              echo "Incrementing from: $CURRENT_TAG"
+              # Remove 'v' prefix and split version parts
+              VERSION_NUMBER=$(echo $CURRENT_TAG | sed 's/^v//')
+              MAJOR=$(echo $VERSION_NUMBER | cut -d. -f1)
+              MINOR=$(echo $VERSION_NUMBER | cut -d. -f2)
+              PATCH=$(echo $VERSION_NUMBER | cut -d. -f3)
+              
+              # Increment patch version
+              NEW_PATCH=$((PATCH + 1))
+              NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+            fi
           fi
-          echo "New tag: $NEW_TAG"
+          
+          echo "Next version will be: $NEW_TAG"
           echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
       - name: Build and Push Docker Image
         run: |
           IMAGE=arthurvb/movie-rating
           TAG=${{ steps.version.outputs.tag }}
+          echo "Building and pushing $IMAGE:$TAG"
           docker build -t $IMAGE:$TAG .
           docker push $IMAGE:$TAG
+          
+          # Also tag as latest
+          docker tag $IMAGE:$TAG $IMAGE:latest
+          docker push $IMAGE:latest
+          
+          echo "Successfully pushed $IMAGE:$TAG and $IMAGE:latest"
