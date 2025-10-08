@@ -15,11 +15,7 @@ spec:
     spec:
       containers:
         - name: movie-rating
-<<<<<<< HEAD
           image: docker.io/arthurvb/movie-rating:v1.0.31 # {"$imagepolicy": "flux-system:movie-rating-policy"}
-=======
-          image: v1.0.37 # {"$imagepolicy": "flux-system:movie-rating-policy:tag"}
->>>>>>> 693f949d54b8ab9004e0e57545a02e3e6a7d6823
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
