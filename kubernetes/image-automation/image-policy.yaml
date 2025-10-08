@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   imageRepositoryRef:
-    name: movie-rating
+    name: movie-rating-repository
   policy:
     semver:
       range: "*"   # Pick the highest semantic version available

@@ -14,8 +14,8 @@ spec:
         branch: dev-main
     commit:
       author:
-        name: flux-bot
-        email: flux@example.com
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
       messageTemplate: |
         chore: update movie-rating image
         
