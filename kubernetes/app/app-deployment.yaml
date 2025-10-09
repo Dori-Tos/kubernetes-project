@@ -8,8 +8,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 1        # At most 1 pod can be unavailable
-      maxSurge: 1              # At most 1 extra pod during update
+      maxUnavailable: 1 # At most 1 pod can be unavailable
+      maxSurge: 1 # At most 1 extra pod during update
   selector:
     matchLabels:
       app: movie-rating
@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: movie-rating
-          image: docker.io/arthurvb/movie-rating:v1.0.8 # {"$imagepolicy": "flux-system:movie-rating-policy"}
+          image: docker.io/arthurvb/movie-rating:v1.0.9 # {"$imagepolicy": "flux-system:movie-rating-policy"}
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
