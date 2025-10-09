@@ -18,6 +18,19 @@ spec:
       labels:
         app: movie-rating
     spec:
+      # Add cache purge as init container
+      initContainers:
+      - name: cache-purge
+        image: curlimages/curl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Purging Varnish cache before starting new pods..."
+          curl -X PURGE http://varnish-service:8080/ -H "Host: movierating.local" -v || true
+          curl -X PURGE http://varnish-service:8080/actors -H "Host: movierating.local" -v || true
+          curl -X PURGE http://varnish-service:8080/reviews -H "Host: movierating.local" -v || true
+          echo "Cache purge completed"
       containers:
         - name: movie-rating
           image: docker.io/arthurvb/movie-rating:v1.0.11 # {"$imagepolicy": "flux-system:movie-rating-policy"}
