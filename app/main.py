@@ -1,10 +1,11 @@
 import flask
+import datetime
 
 app = flask.Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Hello, World! This is a DB Service for movies. WE ARE ONLINE !! We will work on it."
+    return "Hello, World! This is a DB Service for movies. WE ARE ONLINE !! We will work on it.{%datetime.datetime.now()}" % datetime.datetime.now()
 
 @app.route("/actors")
 def actors():
