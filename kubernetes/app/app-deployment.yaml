@@ -28,14 +28,18 @@ spec:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 5
-            periodSeconds: 10
+            initialDelaySeconds: 10    # Increased from 5 to 10
+            periodSeconds: 5           # Check more frequently
+            timeoutSeconds: 3          # Add timeout
+            failureThreshold: 3        # Add failure threshold
           livenessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60    # Increased from 30 to 60
             periodSeconds: 30
+            timeoutSeconds: 3          # Add timeout
+            failureThreshold: 3        # Add failure threshold
           resources:
             requests:
               memory: "64Mi"
