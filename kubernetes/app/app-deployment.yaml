@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: movie-rating
-  namespace: default
+  namespace: test
 spec:
   replicas: 3
   selector:
@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: movie-rating
-          image: docker.io/arthurvb/movie-rating:b2dc832 # {"$imagepolicy": "flux-system:movie-rating-policy"}
-          imagePullPolicy: Always
+          image: docker.io/library/app:v1.0
+          imagePullPolicy: Never
           ports:
             - containerPort: 8080
           env:

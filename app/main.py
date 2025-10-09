@@ -1,63 +1,53 @@
-import flask
-from pymongo import MongoClient
+from flask import Flask, jsonify
 import os
+from pymongo import MongoClient
+import json
 
-app = flask.Flask(__name__)
+app = Flask(__name__)
 
-# MongoDB connection
+# Use environment variables from deployment
 MONGO_HOST = os.getenv('MONGO_HOST', 'mongodb-service')
-MONGO_PORT = int(os.getenv('MONGO_PORT', '27017'))
+MONGO_PORT = os.getenv('MONGO_PORT', '27017')
+MONGO_URI = f'mongodb://{MONGO_HOST}:{MONGO_PORT}/'
 
-try:
-    client = MongoClient(f'mongodb://{MONGO_HOST}:{MONGO_PORT}/')
-    db = client['moviedb']
-    print("Connected to MongoDB!")
-except Exception as e:
-    print(f"Failed to connect to MongoDB: {e}")
-    client = None
+def get_db_connection():
+    try:
+        client = MongoClient(MONGO_URI)
+        client.admin.command('ping')
+        return client['test']
+    except Exception as e:
+        print(f"Database connection failed: {e}")
+        return None
 
 @app.route("/")
 def home():
-    return "Hello, World! This is a DB Service for movies. I want to see this change made at 20:58 on 07/10/2025 - haha"
+    try:
+        db = get_db_connection()
+        if db is None:
+            return jsonify({"error": "Database connection failed"}), 500
+
+        # Get all movies from the collection
+        movies = list(db.movies.find())
+
+        # Convert ObjectId to string for JSON serialization
+        for movie in movies:
+            movie['_id'] = str(movie['_id'])
+
+        return jsonify({
+            "movies": movies,
+            "count": len(movies)
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch movies: {str(e)}"}), 500
 
 @app.route("/actors")
 def actors():
-    if client is None:
-        return "Database connection failed", 500
-    
-    try:
-        actors_collection = db['actors']
-        actors_list = list(actors_collection.find({}, {'_id': 0}))
-        if not actors_list:
-            return "No actors found in database"
-        return {"actors": actors_list}
-    except Exception as e:
-        return f"Error fetching actors: {str(e)}", 500
+    return "List of actors will be here."
 
 @app.route("/reviews")
 def reviews():
-    if client is None:
-        return "Database connection failed", 500
-    
-    try:
-        reviews_collection = db['reviews']
-        reviews_list = list(reviews_collection.find({}, {'_id': 0}))
-        if not reviews_list:
-            return "No reviews found in database"
-        return {"reviews": reviews_list}
-    except Exception as e:
-        return f"Error fetching reviews: {str(e)}", 500
-
-@app.route("/health")
-def health():
-    if client is None:
-        return "Database connection failed", 500
-    try:
-        # Test database connection
-        client.admin.command('ping')
-        return "Healthy - Database connected"
-    except Exception as e:
-        return f"Unhealthy - Database error: {str(e)}", 500
+    return "List of reviews will be here."
 
 @app.route("/settings")
 def settings():

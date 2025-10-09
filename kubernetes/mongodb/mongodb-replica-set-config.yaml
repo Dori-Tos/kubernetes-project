@@ -1,0 +1,36 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb-config
+  namespace: test
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.5"
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    - name: admin
+      db: admin
+      passwordSecretRef:
+        name: mongodb-admin-password
+      roles:
+        - name: clusterAdmin
+          db: admin
+      scramCredentialsSecretName: mongodb-config-admin-scram
+  additionalMongodConfig:
+    configsvr: true
+  statefulSet:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: mongod
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "0.5"
+                limits:
+                  memory: "512Mi"
+                  cpu: "1"
