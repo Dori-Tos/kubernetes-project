@@ -7,6 +7,11 @@ backend default {
 }
 
 sub vcl_recv {
+    # Handle PURGE requests to clear cache
+    if (req.method == "PURGE") {
+        return (purge);
+    }
+    
     # Remove cookies for GET requests without session cookies
     if (req.method == "GET" && req.http.Cookie !~ "sessionid") {
         unset req.http.Cookie;
