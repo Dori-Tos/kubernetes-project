@@ -32,31 +32,31 @@ spec:
           curl -X PURGE http://varnish-service:8080/reviews -H "Host: movierating.local" -v || true
           echo "Cache purge completed"
       containers:
-        - name: movie-rating
-          image: docker.io/arthurvb/movie-rating:v1.0.11 # {"$imagepolicy": "flux-system:movie-rating-policy"}
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8080
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 8080
-            initialDelaySeconds: 10 # Increased from 5 to 10
-            periodSeconds: 5 # Check more frequently
-            timeoutSeconds: 3 # Add timeout
-            failureThreshold: 3 # Add failure threshold
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 8080
-            initialDelaySeconds: 60 # Increased from 30 to 60
-            periodSeconds: 30
-            timeoutSeconds: 3 # Add timeout
-            failureThreshold: 3 # Add failure threshold
-          resources:
-            requests:
-              memory: "64Mi"
-              cpu: "250m"
-            limits:
-              memory: "128Mi"
-              cpu: "500m"
+      - name: movie-rating
+        image: docker.io/arthurvb/movie-rating:v1.0.12 # {"$imagepolicy": "flux-system:movie-rating-policy"}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10 # Increased from 5 to 10
+          periodSeconds: 5 # Check more frequently
+          timeoutSeconds: 3 # Add timeout
+          failureThreshold: 3 # Add failure threshold
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 60 # Increased from 30 to 60
+          periodSeconds: 30
+          timeoutSeconds: 3 # Add timeout
+          failureThreshold: 3 # Add failure threshold
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
