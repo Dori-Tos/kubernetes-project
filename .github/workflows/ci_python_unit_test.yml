@@ -51,15 +51,6 @@ jobs:
             exit 0
           fi
           
-          # Stash any unstaged changes
-          git stash push -m "temp stash for rebase" || true
-          
-          # Pull latest changes with rebase
-          git pull --rebase origin dev-main
-          
-          # Pop stashed changes back
-          git stash pop || true
-          
           # Stage all changes
           git add .
           
@@ -67,13 +58,15 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "Auto-commit after successful tests"
             
-            # Create and switch to test branch
-            git checkout -b test 2>/dev/null || git checkout test
+            # Push to dev-main first
+            git push origin dev-main
             
-            # Push to test branch
-            git push origin test
+            # Then update test branch to match dev-main
+            git push origin dev-main:test
+            
+            echo "✅ Pushed changes to both dev-main and test branches"
           else
-            echo "No changes to commit after rebase"
+            echo "No changes to commit"
           fi
 
   build-and-push:
