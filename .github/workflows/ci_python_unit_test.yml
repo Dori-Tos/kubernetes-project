@@ -1,0 +1,151 @@
+name: Python Tests CI
+
+on:
+  push:
+    branches: [ "dev-main" ]
+  pull_request:
+    branches: [ "dev-main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write  # Add this to allow pushing commits
+
+jobs:
+  test-and-commit:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && github.event.head_commit.author.email != 'fluxcdbot@users.noreply.github.com'"
+
+
+    steps:
+      # Checkout repository
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}  # Explicitly use GITHUB_TOKEN
+
+      # Run unit tests inside Docker
+      - name: Run unit tests in Docker
+        uses: addnab/docker-run-action@v3
+        with:
+          image: python:3.13-slim
+          options: -v ${{ github.workspace }}:/github/workspace --workdir /github/workspace
+          run: |
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
+            python -m pip install --upgrade pip
+            cd kubernetes-project
+            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+            pip install pytest
+            PYTHONPATH=. pytest -v test
+
+      # Commit changes on host runner (Git is available)
+      - name: Commit changes
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Check if there are any changes to commit
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          # Stash any unstaged changes
+          git stash push -m "temp stash for rebase" || true
+          
+          # Pull latest changes with rebase
+          git pull --rebase origin dev-main
+          
+          # Pop stashed changes back
+          git stash pop || true
+          
+          # Stage all changes
+          git add .
+          
+          # Commit if there are staged changes
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto-commit after successful tests"
+            
+            # Create and switch to test branch
+            git checkout -b test 2>/dev/null || git checkout test
+            
+            # Push to test branch
+            git push origin test
+          else
+            echo "No changes to commit after rebase"
+          fi
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: test-and-commit   # 👈 ensures tests must pass before build
+
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && github.event.head_commit.author.email != 'fluxcdbot@users.noreply.github.com'"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Debug secrets
+        run: |
+          echo "Docker username: ${{ secrets.DOCKER_USERNAME != '' }}"
+          echo "Docker password: ${{ secrets.DOCKER_PASSWORD != '' }}"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Determine next version
+        id: version
+        run: |
+          # Get the latest semver tag from Docker Hub
+          REPO="arthurvb/movie-rating"
+          
+          echo "Fetching tags from Docker Hub for $REPO..."
+          
+          # Fetch tags from Docker Hub API with error handling
+          RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/${REPO}/tags/?page_size=100")
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to fetch tags from Docker Hub, starting with v1.0.0"
+            NEW_TAG="v1.0.0"
+          else
+            # Extract semver tags and find the latest
+            CURRENT_TAG=$(echo "$RESPONSE" | jq -r '.results[]?.name // empty' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+            
+            echo "Latest semver tag found: $CURRENT_TAG"
+            
+            if [ -z "$CURRENT_TAG" ] || [ "$CURRENT_TAG" = "null" ]; then
+              echo "No existing semver tags found, starting with v1.0.0"
+              NEW_TAG="v1.0.0"
+            else
+              echo "Incrementing from: $CURRENT_TAG"
+              # Remove 'v' prefix and split version parts
+              VERSION_NUMBER=$(echo $CURRENT_TAG | sed 's/^v//')
+              MAJOR=$(echo $VERSION_NUMBER | cut -d. -f1)
+              MINOR=$(echo $VERSION_NUMBER | cut -d. -f2)
+              PATCH=$(echo $VERSION_NUMBER | cut -d. -f3)
+              
+              # Increment patch version
+              NEW_PATCH=$((PATCH + 1))
+              NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+            fi
+          fi
+          
+          echo "Next version will be: $NEW_TAG"
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE=arthurvb/movie-rating
+          TAG=${{ steps.version.outputs.tag }}
+          echo "Building and pushing $IMAGE:$TAG"
+          docker build -t $IMAGE:$TAG .
+          docker push $IMAGE:$TAG
+          
+          # Also tag as latest
+          docker tag $IMAGE:$TAG $IMAGE:latest
+          docker push $IMAGE:latest
+          
+          echo "Successfully pushed $IMAGE:$TAG and $IMAGE:latest"
