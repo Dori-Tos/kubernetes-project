@@ -45,14 +45,25 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Fetch all branches to ensure we have the latest remote state
+          # Fetch all branches
           git fetch origin
           
-          # Push current dev-main state to test branch (this will include your manual changes)
-          git push origin HEAD:test
+          # Check if test branch exists
+          if git show-ref --verify --quiet refs/remotes/origin/test; then
+            echo "Test branch exists, creating merge commit"
+            # Checkout test branch
+            git checkout -b test origin/test
+            # Merge dev-main into test
+            git merge ${{ github.sha }} --no-ff -m "Merge dev-main to test after successful tests"
+            # Push the merge
+            git push origin test
+          else
+            echo "Test branch doesn't exist, creating from dev-main"
+            git push origin HEAD:test
+          fi
           
-          echo "✅ Successfully pushed dev-main to test branch after tests passed"
-
+          echo "✅ Successfully updated test branch after tests passed"
+          
   build-and-push:
     runs-on: ubuntu-latest
     needs: test-and-commit   # 👈 ensures tests must pass before build
