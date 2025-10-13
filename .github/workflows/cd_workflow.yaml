@@ -153,14 +153,29 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Merge production back to test
-          git checkout test
-          git pull origin test
-          git merge origin/production --no-ff -m "Backmerge production to test [skip ci]"
-          git push origin test
+          # Fetch all branches
+          git fetch origin
           
-          # Merge production back to dev-main  
-          git checkout dev-main
-          git pull origin dev-main
-          git merge origin/production --no-ff -m "Backmerge production to dev-main [skip ci]"
+          # Backmerge to test branch with strategy to prefer deletions
+          echo "Backmerging to test branch..."
+          git checkout -B test origin/test
+          git merge origin/production --no-ff -m "Backmerge production to test [skip ci]" -X ours || {
+            echo "Manual conflict resolution needed"
+            git status --porcelain | grep "^DU " | cut -c4- | xargs git rm
+            git add -A
+            git commit --no-edit
+          }
+          git push origin test
+          echo "✅ Backmerged to test"
+          
+          # Backmerge to dev-main branch
+          echo "Backmerging to dev-main branch..."
+          git checkout -B dev-main origin/dev-main
+          git merge origin/production --no-ff -m "Backmerge production to dev-main [skip ci]" -X ours || {
+            echo "Manual conflict resolution needed"
+            git status --porcelain | grep "^DU " | cut -c4- | xargs git rm
+            git add -A
+            git commit --no-edit
+          }
           git push origin dev-main
+          echo "✅ Backmerged to dev-main"
