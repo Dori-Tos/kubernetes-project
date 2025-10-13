@@ -66,6 +66,11 @@ jobs:
           # Commit if there are staged changes
           if ! git diff --staged --quiet; then
             git commit -m "Auto-commit after successful tests"
+            
+            # Create and switch to test branch
+            git checkout -b test 2>/dev/null || git checkout test
+            
+            # Push to test branch
             git push origin test
           else
             echo "No changes to commit after rebase"
