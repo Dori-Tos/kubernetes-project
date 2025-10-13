@@ -45,30 +45,22 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Check if there are any changes to commit
+          # Make sure we're on production branch
+          git checkout production
+          
+          # Check if there are any changes to commit (gitignore will handle cache files)
           if git diff --quiet && git diff --staged --quiet; then
             echo "No changes to commit"
             exit 0
           fi
           
-          # Stash any unstaged changes
-          git stash push -m "temp stash for rebase" || true
-          
-          # Pull latest changes with rebase
-          git pull --rebase origin production
-          
-          # Pop stashed changes back
-          git stash pop || true
-          
-          # Stage all changes
           git add .
           
-          # Commit if there are staged changes
           if ! git diff --staged --quiet; then
-            git commit -m "Auto-commit after successful tests"
+            git commit -m "Auto-commit after successful tests [skip cd]"
             git push origin production
           else
-            echo "No changes to commit after rebase"
+            echo "No changes to commit"
           fi
 
   build-and-push:
