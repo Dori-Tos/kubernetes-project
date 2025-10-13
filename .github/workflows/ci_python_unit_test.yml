@@ -1,4 +1,4 @@
-name: Python Tests CI
+name: CI - Test App - Build and Push Docker Image
 
 on:
   push:
@@ -38,44 +38,32 @@ jobs:
             pip install pytest
             PYTHONPATH=. pytest -v tests
 
-      # Commit changes on host runner (Git is available)
-      - name: Commit changes
+      # Commit changes on host runner
+      - name: Push to test branch after successful tests
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Check if there are any changes to commit
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
+          # Fetch all branches
+          git fetch origin
           
-          # Stash any unstaged changes
-          git stash push -m "temp stash for rebase" || true
-          
-          # Pull latest changes with rebase
-          git pull --rebase origin dev-main
-          
-          # Pop stashed changes back
-          git stash pop || true
-          
-          # Stage all changes
-          git add .
-          
-          # Commit if there are staged changes
-          if ! git diff --staged --quiet; then
-            git commit -m "Auto-commit after successful tests"
-            
-            # Create and switch to test branch
-            git checkout -b test 2>/dev/null || git checkout test
-            
-            # Push to test branch
+          # Check if test branch exists
+          if git show-ref --verify --quiet refs/remotes/origin/test; then
+            echo "Test branch exists, creating merge commit"
+            # Checkout test branch
+            git checkout -b test origin/test
+            # Merge dev-main into test
+            git merge ${{ github.sha }} --no-ff -m "Merge dev-main to test after successful tests"
+            # Push the merge
             git push origin test
           else
-            echo "No changes to commit after rebase"
+            echo "Test branch doesn't exist, creating from dev-main"
+            git push origin HEAD:test
           fi
-
+          
+          echo "✅ Successfully updated test branch after tests passed"
+          
   build-and-push:
     runs-on: ubuntu-latest
     needs: test-and-commit   # 👈 ensures tests must pass before build
