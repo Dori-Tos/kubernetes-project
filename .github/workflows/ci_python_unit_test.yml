@@ -38,36 +38,20 @@ jobs:
             pip install pytest
             PYTHONPATH=. pytest -v tests
 
-      # Commit changes on host runner (Git is available)
-      - name: Commit changes
+      # Commit changes on host runner
+      - name: Push to test branch after successful tests
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Check if there are any changes to commit
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
+          # Fetch all branches to ensure we have the latest remote state
+          git fetch origin
           
-          # Stage all changes
-          git add .
+          # Push current dev-main state to test branch (this will include your manual changes)
+          git push origin HEAD:test
           
-          # Commit if there are staged changes
-          if ! git diff --staged --quiet; then
-            git commit -m "Auto-commit after successful tests"
-            
-            # Push to dev-main first
-            git push origin dev-main
-            
-            # Then update test branch to match dev-main
-            git push origin dev-main:test
-            
-            echo "✅ Pushed changes to both dev-main and test branches"
-          else
-            echo "No changes to commit"
-          fi
+          echo "✅ Successfully pushed dev-main to test branch after tests passed"
 
   build-and-push:
     runs-on: ubuntu-latest
