@@ -5,7 +5,7 @@ app = flask.Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Hello, World! This is a DB Service for movies. from test to production"
+    return "Hello, World! This is a DB Service for movies. commit on test at 14/10/2025 08h47"
 
 @app.route("/actors")
 def actors():
