@@ -10,5 +10,4 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-    branch: test
   targetNamespace: default

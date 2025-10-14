@@ -9,6 +9,5 @@ spec:
   prune: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
-    branch: production
+    name: flux-system-production
   targetNamespace: production
