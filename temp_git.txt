@@ -1,0 +1,2 @@
+flux-system -n default
+flux-system -n flux-system

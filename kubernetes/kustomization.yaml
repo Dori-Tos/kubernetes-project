@@ -4,5 +4,7 @@ kind: Kustomization
 namespace: default
 resources:
   - app/
+  - app-production/
   - flux-system/
   - image-automation/
+  - image-automation-production/

@@ -1,11 +1,11 @@
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy
 metadata:
-  name: movie-rating-policy
-  namespace: default
+  name: prod-movie-rating-policy
+  namespace: production
 spec:
   imageRepositoryRef:
-    name: movie-rating-repository
+    name: prod-movie-rating-repository
   policy:
     semver:
       range: ">=1.0.0"
