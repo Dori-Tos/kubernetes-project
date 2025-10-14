@@ -6,5 +6,3 @@ resources:
   - app/
   - app-production/
   - flux-system/
-  - image-automation/
-  - image-automation-production/
