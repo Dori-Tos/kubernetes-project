@@ -2,7 +2,7 @@ apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageRepository
 metadata:
   name: prod-movie-rating-repository
-  namespace: production
+  namespace: default
 spec:
   image: docker.io/arthurvb/prod-movie-rating
   interval: 1m  # check Docker Hub every minute

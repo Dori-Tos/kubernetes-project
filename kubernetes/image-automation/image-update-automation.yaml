@@ -2,6 +2,7 @@ apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageUpdateAutomation
 metadata:
   name: movie-rating-automation
+  namespace: default
 spec:
   suspend: false
   interval: 1m
