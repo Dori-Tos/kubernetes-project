@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: movie-rating
-  namespace: default
+  namespace: production
 spec:
   replicas: 3
   strategy:
@@ -33,7 +33,7 @@ spec:
           echo "Cache purge completed"
       containers:
       - name: movie-rating
-        image: docker.io/arthurvb/movie-rating:v1.0.19 # {"$imagepolicy": "default:movie-rating-policy"}
+        image: docker.io/arthurvb/prod-movie-rating:v1.0.19 # {"$imagepolicy": "production:prod-movie-rating-policy"}
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

@@ -5,5 +5,3 @@ resources:
   - image-policy.yaml
   - image-repository.yaml
   - image-update-automation.yaml
-
-namespace: flux-system
