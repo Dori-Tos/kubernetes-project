@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: varnish-production
+  namespace: production
+spec:
+  replicas: 3  # More replicas for production
+  selector:
+    matchLabels:
+      app: varnish-production
+  template:
+    metadata:
+      labels:
+        app: varnish-production
+    spec:
+      containers:
+      - name: varnish
+        image: varnish-cache:1.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        command:
+        - "varnishd"
+        - "-F"
+        - "-f"
+        - "/etc/varnish/default.vcl"
+        - "-a"
+        - ":8080"
+        - "-s"
+        - "malloc,256m"  # More memory for production
+        volumeMounts:
+        - name: varnish-config
+          mountPath: /etc/varnish
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: varnish-config
+        configMap:
+          name: varnish-config-production
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: varnish-service-production
+  namespace: production
+spec:
+  selector:
+    app: varnish-production
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: varnish-config-production
+  namespace: production
+data:
+  default.vcl: |
+    vcl 4.1;
+
+    backend default {
+        .host = "app-service";          # Production app service in production namespace
+        .port = "8080";
+        .first_byte_timeout = 300s;
+        .connect_timeout = 10s;
+    }
+
+    sub vcl_recv {
+        # Handle PURGE requests to clear cache
+        if (req.method == "PURGE") {
+            return (purge);
+        }
+        
+        # Remove cookies for GET requests without session cookies
+        if (req.method == "GET" && req.http.Cookie !~ "sessionid") {
+            unset req.http.Cookie;
+        }
+        
+        # Only cache GET and HEAD requests
+        if (req.method != "GET" && req.method != "HEAD") {
+            return (pass);
+        }
+        
+        # Add production environment headers
+        set req.http.X-Environment = "production";
+        
+        # More strict caching rules for production
+        if (req.url ~ "\.(css|js|png|jpg|jpeg|gif|ico|svg)$") {
+            # Static assets - long cache
+            return (hash);
+        }
+    }
+
+    sub vcl_backend_response {
+        # Longer cache times for production
+        if (beresp.ttl <= 0s) {
+            set beresp.ttl = 3600s;  # 1 hour default for production
+        }
+        
+        # Static assets cache longer
+        if (bereq.url ~ "\.(css|js|png|jpg|jpeg|gif|ico|svg)$") {
+            set beresp.ttl = 86400s;  # 24 hours for static assets
+        }
+        
+        # API responses cache shorter
+        if (bereq.url ~ "^/api/") {
+            set beresp.ttl = 600s;    # 10 minutes for API
+        }
+        
+        # Add caching headers
+        if (beresp.status == 200 || beresp.status == 301 || beresp.status == 404) {
+            set beresp.ttl = 3600s;
+        }
+    }
+
+    sub vcl_deliver {
+        # Add cache status headers
+        if (obj.hits > 0) {
+            set resp.http.X-Cache = "HIT";
+            set resp.http.X-Cache-Hits = obj.hits;
+        } else {
+            set resp.http.X-Cache = "MISS";
+        }
+        
+        # Add environment info
+        set resp.http.X-Environment = "production";
+        
+        # Security headers for production
+        set resp.http.X-Frame-Options = "SAMEORIGIN";
+        set resp.http.X-Content-Type-Options = "nosniff";
+        
+        # Remove server info for security
+        unset resp.http.Server;
+        unset resp.http.X-Powered-By;
+        unset resp.http.Via;
+    }

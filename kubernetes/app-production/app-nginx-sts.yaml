@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nginx-sts
+  namespace: default
+  labels:
+    app: nginx
+spec:
+  replicas: 2
+  serviceName: nginx-svc
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx-container
+        image: nginx:latest
+        ports:
+        - containerPort: 8080
+        command: ["/bin/sh"]
+        args: ["-c", "echo 'events{worker_connections 1024;}http{upstream varnish_backend{server varnish-service:8080;}server{listen 8080;server_name movierating.local;location /{proxy_pass http://varnish_backend;proxy_set_header Host $$host;proxy_set_header X-Real-IP $$remote_addr;}}}' > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
