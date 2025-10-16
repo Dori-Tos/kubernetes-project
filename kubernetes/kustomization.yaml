@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
   - app/
   - app-production/
+  - varnish-test/
+  - varnish-production/
   - flux-system/
   - image-automation/
   - image-automation-production/

@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: varnish-test
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: varnish-test
+  template:
+    metadata:
+      labels:
+        app: varnish-test
+    spec:
+      containers:
+      - name: varnish
+        image: varnish-cache:1.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        command:
+        - "varnishd"
+        - "-F"
+        - "-f"
+        - "/etc/varnish/default.vcl"
+        - "-a"
+        - ":8080"
+        volumeMounts:
+        - name: varnish-config
+          mountPath: /etc/varnish
+      volumes:
+      - name: varnish-config
+        configMap:
+          name: varnish-config-test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: varnish-service-test
+  namespace: default
+spec:
+  selector:
+    app: varnish-test
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: varnish-config-test
+  namespace: default
+data:
+  default.vcl: |
+    vcl 4.1;
+
+    backend default {
+        .host = "app-service";          # Test app service in default namespace
+        .port = "8080";
+        .first_byte_timeout = 300s;
+    }
+
+    sub vcl_recv {
+        # Handle PURGE requests to clear cache
+        if (req.method == "PURGE") {
+            return (purge);
+        }
+        
+        # Remove cookies for GET requests without session cookies
+        if (req.method == "GET" && req.http.Cookie !~ "sessionid") {
+            unset req.http.Cookie;
+        }
+        
+        # Only cache GET and HEAD requests
+        if (req.method != "GET" && req.method != "HEAD") {
+            return (pass);
+        }
+        
+        # Add test environment headers
+        set req.http.X-Environment = "test";
+    }
+
+    sub vcl_backend_response {
+        # Cache for 5 minutes by default in test
+        if (beresp.ttl <= 0s) {
+            set beresp.ttl = 300s;  # 5 minutes for test
+        }
+        
+        # Add caching headers
+        if (beresp.status == 200 || beresp.status == 301 || beresp.status == 404) {
+            set beresp.ttl = 300s;
+        }
+    }
+
+    sub vcl_deliver {
+        # Add cache status headers
+        if (obj.hits > 0) {
+            set resp.http.X-Cache = "HIT";
+            set resp.http.X-Cache-Hits = obj.hits;
+        } else {
+            set resp.http.X-Cache = "MISS";
+        }
+        
+        # Add environment info
+        set resp.http.X-Environment = "test";
+        
+        # Remove server info for security
+        unset resp.http.Server;
+        unset resp.http.X-Powered-By;
+    }

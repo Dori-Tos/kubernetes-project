@@ -8,5 +8,5 @@ spec:
   ref:
     branch: test
   secretRef:
-    name: flux-system
+    name: flux-system-pat
   url: https://github.com/Dori-Tos/kubernetes-project.git
