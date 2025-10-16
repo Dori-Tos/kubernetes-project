@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: nginx-sts
-  namespace: default
+  namespace: production
   labels:
     app: nginx
 spec:
@@ -22,4 +22,4 @@ spec:
         ports:
         - containerPort: 8080
         command: ["/bin/sh"]
-        args: ["-c", "echo 'events{worker_connections 1024;}http{upstream varnish_backend{server varnish-service:8080;}server{listen 8080;server_name movierating.local;location /{proxy_pass http://varnish_backend;proxy_set_header Host $$host;proxy_set_header X-Real-IP $$remote_addr;}}}' > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
+        args: ["-c", "echo 'events{worker_connections 1024;}http{upstream varnish_backend{server varnish-service-production:8080;}server{listen 8080;server_name movierating.local;location /{proxy_pass http://varnish_backend;proxy_set_header Host $$host;proxy_set_header X-Real-IP $$remote_addr;}}}' > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
