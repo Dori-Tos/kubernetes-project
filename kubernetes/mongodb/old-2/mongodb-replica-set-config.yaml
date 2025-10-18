@@ -1,0 +1,215 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb-config
+  namespace: test
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.5"
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    - name: admin
+      db: admin
+      passwordSecretRef:
+        name: mongodb-admin-password
+      roles:
+        - name: clusterAdmin
+          db: admin
+        - name: userAdminAnyDatabase
+          db: admin
+      scramCredentialsSecretName: mongodb-config-admin
+    - name: ${MONGODB_USERNAME}
+      db: ${MONGODB_TEST_DATABASE}
+      passwordSecretRef:
+        name: mongodb-app-password
+      roles:
+        - name: readWrite
+          db: ${MONGODB_TEST_DATABASE}
+      scramCredentialsSecretName: mongodb-config-appuser
+  additionalMongodConfig:
+    sharding:
+      clusterRole: configsvr 
+  statefulSet:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: mongod
+            readinessProbe:
+              exec:
+                command:
+                - /bin/true
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+          - name: mongodb-agent
+            readinessProbe:
+              exec:
+                command:
+                - /bin/true
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+              env:
+              - name: AGENT_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: mongodb-agent-api-key
+                    key: agentApiKey
+              volumeMounts:
+              - name: agent-api-key
+                mountPath: /mongodb-automation/agent-api-key
+                readOnly: true
+          volumes:
+          - name: agent-api-key
+            secret:
+              secretName: mongodb-agent-api-key
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 1Gi
+
+---
+
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb-shard1
+  namespace: test
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.5"
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    - name: admin
+      db: admin
+      passwordSecretRef:
+        name: mongodb-admin-password
+      roles:
+        - name: clusterAdmin
+          db: admin
+        - name: userAdminAnyDatabase
+          db: admin
+      scramCredentialsSecretName: mongodb-shard1-admin
+    - name: ${MONGODB_USERNAME}
+      db: ${MONGODB_TEST_DATABASE}
+      passwordSecretRef:
+        name: mongodb-app-password
+      roles:
+        - name: readWrite
+          db: ${MONGODB_TEST_DATABASE}
+      scramCredentialsSecretName: mongodb-shard1-appuser
+  additionalMongodConfig:
+    sharding:
+      clusterRole: shardsvr  # Fixed: Use clusterRole instead of shardsvr
+  statefulSet:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: mongod
+            readinessProbe:
+              exec:
+                command:
+                - /bin/true
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+          - name: mongodb-agent
+            readinessProbe:
+              exec:
+                command:
+                - /bin/true
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 1Gi
+
+---
+
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb-shard2
+  namespace: test
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.5"
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    - name: admin
+      db: admin
+      passwordSecretRef:
+        name: mongodb-admin-password
+      roles:
+        - name: clusterAdmin
+          db: admin
+        - name: userAdminAnyDatabase
+          db: admin
+      scramCredentialsSecretName: mongodb-shard2-admin
+    - name: ${MONGODB_USERNAME}
+      db: ${MONGODB_TEST_DATABASE}
+      passwordSecretRef:
+        name: mongodb-app-password
+      roles:
+        - name: readWrite
+          db: ${MONGODB_TEST_DATABASE}
+      scramCredentialsSecretName: mongodb-shard2-appuser
+  additionalMongodConfig:
+    sharding:
+      clusterRole: shardsvr  # Fixed: Use clusterRole instead of shardsvr
+  statefulSet:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: mongod
+            readinessProbe:
+              exec:
+                command:
+                - /bin/true
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+          - name: mongodb-agent
+            readinessProbe:
+              exec:
+                command:
+                - /bin/true
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 1Gi

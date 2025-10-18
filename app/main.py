@@ -1,45 +1,56 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, jsonify
 import os
 from pymongo import MongoClient
 import json
+import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
-# Use environment variables from deployment
-MONGO_HOST = os.getenv('MONGO_HOST', 'mongodb-service')
-MONGO_PORT = os.getenv('MONGO_PORT', '27017')
-MONGO_URI = f'mongodb://{MONGO_HOST}:{MONGO_PORT}/'
-
+# MongoDB connection
 def get_db_connection():
     try:
-        client = MongoClient(MONGO_URI)
+        mongodb_uri = os.getenv('MONGODB_URI')
+        if not mongodb_uri:
+            raise ValueError("MONGODB_URI environment variable not set")
+        
+        client = MongoClient(mongodb_uri)
+        # Test connection
         client.admin.command('ping')
-        return client['test']
+        logging.info("Successfully connected to MongoDB")
+        
+        db_name = os.getenv('MONGODB_DATABASE', 'testdb')
+        return client[db_name]
     except Exception as e:
-        print(f"Database connection failed: {e}")
+        logging.error(f"Failed to connect to MongoDB: {e}")
         return None
 
-@app.route("/")
+# Initialize database connection
+db = get_db_connection()
+
+@app.route('/')
 def home():
     try:
-        db = get_db_connection()
         if db is None:
             return jsonify({"error": "Database connection failed"}), 500
-
-        # Get all movies from the collection
-        movies = list(db.movies.find())
-
-        # Convert ObjectId to string for JSON serialization
-        for movie in movies:
-            movie['_id'] = str(movie['_id'])
-
-        return jsonify({
-            "movies": movies,
-            "count": len(movies)
-        })
-
+        
+        # Get collection count and sample data
+        collections = db.list_collection_names()
+        data = {}
+        
+        for collection_name in collections:
+            collection = db[collection_name]
+            count = collection.count_documents({})
+            sample = list(collection.find().limit(5))
+            data[collection_name] = {
+                "count": count,
+                "sample": sample
+            }
+        
+        return render_template('index.html', data=data, collections=collections)
     except Exception as e:
-        return jsonify({"error": f"Failed to fetch movies: {str(e)}"}), 500
+        logging.error(f"Error in index route: {e}")
+        return jsonify({"error": str(e)}), 500    
 
 @app.route("/actors")
 def actors():

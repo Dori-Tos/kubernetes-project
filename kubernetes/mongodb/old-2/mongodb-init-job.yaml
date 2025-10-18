@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-sharding
+  namespace: test
+spec:
+  template:
+    spec:
+      containers:
+      - name: mongo-client
+        image: mongo:6.0.5
+        command:
+          - /bin/bash
+          - -c
+          - |
+            sleep 120  # Wait for all services to be ready
+            mongo mongodb://admin:admin123@mongos-service:27017/admin --eval "
+            sh.addShard('mongodb-shard1/mongodb-shard1-0.mongodb-shard1-svc.test.svc.cluster.local:27017');
+            sh.addShard('mongodb-shard2/mongodb-shard2-0.mongodb-shard2-svc.test.svc.cluster.local:27017');
+            sh.status();
+            print('Sharding initialized successfully');
+            "
+      restartPolicy: OnFailure
+  backoffLimit: 3
