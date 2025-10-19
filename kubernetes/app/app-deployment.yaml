@@ -15,43 +15,28 @@ spec:
     spec:
       containers:
       - name: movie-rating
-        image: docker.io/library/app:v1.0
+        image: docker.io/library/app:1.0
         imagePullPolicy: Never
         ports:
         - containerPort: 8080
         env:
-        # Secret references (sensitive data)
+        # Use the auto-generated MongoDB connection secret
+        - name: MONGODB_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: example-mongodb-admin-app-user
+              key: connectionString.standardSrv
+        # Optional: Still expose individual credentials if needed
         - name: MONGODB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: mongodb-admin-credentials
+              name: example-mongodb-admin-app-user
               key: username
         - name: MONGODB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mongodb-admin-credentials
+              name: example-mongodb-admin-app-user
               key: password
-        # ConfigMap references (non-sensitive data)
+        # Database name for your application
         - name: MONGODB_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: mongodb-config
-              key: MONGODB_DATABASE
-        - name: MONGODB_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: mongodb-config
-              key: MONGODB_HOST
-        - name: MONGODB_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: mongodb-config
-              key: MONGODB_PORT
-        - name: MONGODB_OPTIONS
-          valueFrom:
-            configMapKeyRef:
-              name: mongodb-config
-              key: MONGODB_OPTIONS
-        # Constructed URI (done in container)
-        - name: MONGODB_URI
-          value: "mongodb://$(MONGODB_USERNAME):$(MONGODB_PASSWORD)@$(MONGODB_HOST):$(MONGODB_PORT)/$(MONGODB_DATABASE)?$(MONGODB_OPTIONS)"
+          value: "movie-ratings-db"

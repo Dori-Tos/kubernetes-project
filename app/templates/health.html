@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Review Database - Health Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            color: #eee;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #16213e, #0f3460);
+            padding: 2rem 0;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header h1 {
+            color: #f39c12;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .nav-links {
+            margin-top: 1rem;
+        }
+        
+        .nav-links a {
+            color: #3498db;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        .nav-links a:hover, .nav-links a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .health-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .health-healthy {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+        
+        .health-unhealthy {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        
+        .status-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        
+        .health-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .health-card {
+            background: #252845;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card-title {
+            color: #f39c12;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-content {
+            color: #ecf0f1;
+        }
+        
+        .status-indicator {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-ok {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .status-error {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .status-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .collection-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #34495e;
+        }
+        
+        .collection-item:last-child {
+            border-bottom: none;
+        }
+        
+        .collection-name {
+            color: #3498db;
+            font-weight: 500;
+        }
+        
+        .collection-count {
+            color: #bdc3c7;
+        }
+        
+        .timestamp {
+            text-align: center;
+            color: #95a5a6;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            padding: 15px;
+            background: #34495e;
+            border-radius: 5px;
+        }
+        
+        .auto-refresh {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .refresh-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #2980b9;
+        }
+        
+        .error-details {
+            background: #2c3e50;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            color: #e74c3c;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Movie Review Database</h1>
+            <p>Discover and review your favorite movies</p>
+            <div class="nav-links">
+                <a href="/">Movies</a>
+                <a href="/actors">Actors</a>
+                <a href="/reviews">Reviews</a>
+                <a href="/health" class="active">Health</a>
+            </div>
+        </div>
+        
+        <div class="auto-refresh">
+            <button class="refresh-btn" onclick="window.location.reload()">🔄 Refresh Status</button>
+        </div>
+        
+        <div class="health-status {{ 'health-healthy' if status.overall == 'healthy' else 'health-unhealthy' }}">
+            <span class="status-icon">
+                {% if status.overall == 'healthy' %}✅{% else %}❌{% endif %}
+            </span>
+            System Status: {{ status.overall.upper() }}
+        </div>
+        
+        <div class="health-cards">
+            <!-- Database Status Card -->
+            <div class="health-card">
+                <div class="card-title">
+                    🗄️ Database Connection
+                    <span class="status-indicator {{ 'status-ok' if status.database.status == 'connected' else 'status-error' }}">
+                        {{ status.database.status.upper() }}
+                    </span>
+                </div>
+                <div class="card-content">
+                    {% if status.database.status == 'connected' %}
+                        <p>✅ Successfully connected to MongoDB</p>
+                        <p>🔗 Replica set is operational</p>
+                    {% else %}
+                        <p>❌ Database connection failed</p>
+                        {% if status.database.error %}
+                        <div class="error-details">
+                            Error: {{ status.database.error }}
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Collections Status Card -->
+            {% if status.collections %}
+            <div class="health-card">
+                <div class="card-title">
+                    📚 Collections Status
+                </div>
+                <div class="card-content">
+                    {% for collection, info in status.collections.items() %}
+                    <div class="collection-item">
+                        <span class="collection-name">{{ collection.title() }}</span>
+                        <div>
+                            <span class="collection-count">{{ info.count }} records</span>
+                            <span class="status-indicator {{ 'status-ok' if info.status == 'ok' else 'status-error' }}">
+                                {{ info.status.upper() }}
+                            </span>
+                        </div>
+                    </div>
+                    {% if info.error %}
+                    <div class="error-details">
+                        {{ collection }}: {{ info.error }}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- System Information Card -->
+            <div class="health-card">
+                <div class="card-title">
+                    ⚙️ System Information
+                </div>
+                <div class="card-content">
+                    <div class="collection-item">
+                        <span class="collection-name">Application</span>
+                        <span class="collection-count">Flask Web Server</span>
+                    </div>
+                    <div class="collection-item">
+                        <span class="collection-name">Database</span>
+                        <span class="collection-count">MongoDB Community</span>
+                    </div>
+                    <div class="collection-item">
+                        <span class="collection-name">Environment</span>
+                        <span class="collection-count">Kubernetes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- MongoDB Scaling Control -->
+        <div class="health-cards">
+            <div class="health-card" style="grid-column: 1 / -1;">
+                <div class="card-title">
+                    ⚙️ MongoDB Scaling Control
+                </div>
+                <div class="card-content">
+                    <div id="scaling-section">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <label for="replica-count" style="color: #3498db; margin-right: 10px;">Replica Count:</label>
+                                <select id="replica-count" style="padding: 8px; border-radius: 5px; background: #34495e; color: #ecf0f1; border: 1px solid #555;">
+                                    <option value="1">1 (Not Recommended)</option>
+                                    <option value="3" selected>3 (Recommended)</option>
+                                    <option value="5">5 (High Availability)</option>
+                                    <option value="7">7 (Maximum)</option>
+                                </select>
+                            </div>
+                            <button id="scale-btn" onclick="scaleDatabase()" style="padding: 10px 20px; background: #e67e22; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                🔄 Scale Database
+                            </button>
+                        </div>
+                        
+                        <div id="replica-status" style="background: #2c3e50; padding: 15px; border-radius: 5px; margin-top: 15px;">
+                            <div style="color: #f39c12; font-weight: bold; margin-bottom: 10px;">Current Replica Status:</div>
+                            <div id="status-content">Loading...</div>
+                        </div>
+                        
+                        <div id="scaling-result" style="margin-top: 15px; padding: 10px; border-radius: 5px; display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="timestamp">
+            📅 Last updated: {{ status.timestamp }}
+            <br>
+            <small>This page auto-refreshes system health status</small>
+        </div>
+        
+        <script>
+            let userInteracting = false;
+            let statusRefreshInterval;
+            
+            // Load replica status on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                loadReplicaStatus();
+                // Auto-refresh replica status every 10 seconds
+                statusRefreshInterval = setInterval(loadReplicaStatus, 10000);
+                
+                // Track user interactions with the select box
+                document.getElementById('replica-count').addEventListener('focus', function() {
+                    userInteracting = true;
+                });
+                
+                document.getElementById('replica-count').addEventListener('blur', function() {
+                    setTimeout(() => { userInteracting = false; }, 1000);
+                });
+            });
+            
+            // Auto-refresh page every 2 minutes (increased due to scaling operations)
+            setTimeout(function() {
+                window.location.reload();
+            }, 120000);
+            
+            async function loadReplicaStatus() {
+                try {
+                    const response = await fetch('/get-replica-status');
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        updateReplicaStatus(data);
+                    } else {
+                        document.getElementById('status-content').innerHTML = `<span style="color: #e74c3c;">Error: ${data.error}</span>`;
+                    }
+                } catch (error) {
+                    document.getElementById('status-content').innerHTML = `<span style="color: #e74c3c;">Connection error: ${error.message}</span>`;
+                }
+            }
+            
+            function updateReplicaStatus(data) {
+                const statusHtml = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                        <div><strong>Desired:</strong> ${data.desired_members}</div>
+                        <div><strong>Current:</strong> ${data.current_mongodb_members}</div>
+                        <div><strong>Phase:</strong> <span style="color: ${data.phase === 'Running' ? '#27ae60' : '#f39c12'}">${data.phase}</span></div>
+                        <div><strong>Status:</strong> <span style="color: ${data.is_scaling ? '#f39c12' : '#27ae60'}">${data.is_scaling ? 'Scaling' : 'Stable'}</span></div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <strong>Pods:</strong>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 8px;">
+                            ${data.pods.map(pod => `
+                                <div style="background: #34495e; padding: 8px; border-radius: 3px; font-size: 0.9em;">
+                                    <div>${pod.name}</div>
+                                    <div style="font-size: 0.8em; color: ${pod.ready === 'True' ? '#27ae60' : '#e74c3c'};">
+                                        ${pod.status} (Ready: ${pod.ready})
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                document.getElementById('status-content').innerHTML = statusHtml;
+                
+                // Update the select box to reflect current desired state (only if user is not interacting)
+                if (!userInteracting) {
+                    const selectElement = document.getElementById('replica-count');
+                    
+                    // First, remove any previously added "Current" options
+                    Array.from(selectElement.options).forEach(option => {
+                        if (option.textContent.includes('(Current)')) {
+                            option.remove();
+                        }
+                    });
+                    
+                    // Check if the current desired_members value exists in the select options
+                    const optionExists = Array.from(selectElement.options).some(option => option.value == data.desired_members);
+                    
+                    if (optionExists) {
+                        selectElement.value = data.desired_members;
+                    } else {
+                        // If the value doesn't exist in options, add it temporarily
+                        const newOption = document.createElement('option');
+                        newOption.value = data.desired_members;
+                        newOption.textContent = `${data.desired_members} (Current)`;
+                        newOption.selected = true;
+                        
+                        // Insert in the correct position to maintain order
+                        let inserted = false;
+                        for (let i = 0; i < selectElement.options.length; i++) {
+                            if (parseInt(selectElement.options[i].value) > data.desired_members) {
+                                selectElement.insertBefore(newOption, selectElement.options[i]);
+                                inserted = true;
+                                break;
+                            }
+                        }
+                        if (!inserted) {
+                            selectElement.appendChild(newOption);
+                        }
+                    }
+                }
+            }
+            
+            async function scaleDatabase() {
+                const replicaCount = parseInt(document.getElementById('replica-count').value);
+                const button = document.getElementById('scale-btn');
+                const resultDiv = document.getElementById('scaling-result');
+                
+                // Store the selected value to maintain it
+                const selectedValue = replicaCount;
+                
+                // Disable button during scaling
+                button.disabled = true;
+                button.innerHTML = '⏳ Scaling...';
+                
+                try {
+                    const response = await fetch('/scale', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ replicas: replicaCount })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    resultDiv.style.display = 'block';
+                    
+                    if (response.ok) {
+                        resultDiv.style.background = '#27ae60';
+                        resultDiv.style.color = 'white';
+                        resultDiv.innerHTML = `✅ ${data.message}`;
+                        
+                        // Refresh status more frequently during scaling
+                        const refreshInterval = setInterval(() => {
+                            loadReplicaStatus();
+                        }, 3000);
+                        
+                        // Stop frequent refresh after 30 seconds
+                        setTimeout(() => {
+                            clearInterval(refreshInterval);
+                        }, 30000);
+                        
+                        // Initial refresh after 2 seconds
+                        setTimeout(loadReplicaStatus, 2000);
+                    } else {
+                        resultDiv.style.background = '#e74c3c';
+                        resultDiv.style.color = 'white';
+                        resultDiv.innerHTML = `❌ ${data.error}`;
+                        
+                        // Restore the user's selection on error
+                        document.getElementById('replica-count').value = selectedValue;
+                    }
+                } catch (error) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.background = '#e74c3c';
+                    resultDiv.style.color = 'white';
+                    resultDiv.innerHTML = `❌ Connection error: ${error.message}`;
+                    
+                    // Restore the user's selection on error
+                    document.getElementById('replica-count').value = selectedValue;
+                } finally {
+                    // Re-enable button
+                    button.disabled = false;
+                    button.innerHTML = '🔄 Scale Database';
+                    
+                    // Hide result after 15 seconds
+                    setTimeout(() => {
+                        resultDiv.style.display = 'none';
+                    }, 15000);
+                }
+            }
+        </script>
+    </div>
+</body>
+</html>
