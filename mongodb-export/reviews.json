@@ -1,0 +1,77 @@
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b04d"
+	},
+	"username": "pink_fan",
+	"text": "Fun and colorful! Great performances by Margot and Ryan.",
+	"value": 4,
+	"movie_id": {
+		"$oid": "68f4c08571726d7ff389b047"
+	}
+}
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b049"
+	},
+	"username": "john_doe",
+	"text": "Mind-bending masterpiece! Amazing cinematography.",
+	"value": 5,
+	"movie_id": {
+		"$oid": "68f4c08571726d7ff389b045"
+	}
+}
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b04e"
+	},
+	"username": "batman_lover",
+	"text": "Tom Hardy was intimidating as Bane and well-acted.",
+	"value": 4,
+	"movie_id": {
+		"$oid": "68f4c08571726d7ff389b048"
+	}
+}
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b04c"
+	},
+	"username": "critic123",
+	"text": "Good action but too long. Could have been shorter.",
+	"value": 3,
+	"movie_id": {
+		"$oid": "68f4c08571726d7ff389b046"
+	}
+}
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b04b"
+	},
+	"username": "marvel_fan",
+	"text": "Perfect ending to the MCU saga. Emotional and epic!",
+	"value": 5,
+	"movie_id": {
+		"$oid": "68f4c08571726d7ff389b046"
+	}
+}
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b04f"
+	},
+	"username": "cinema_critic",
+	"text": "Decent conclusion but not as good as Dark Knight.",
+	"value": 3,
+	"movie_id": {
+		"$oid": "68f4c08571726d7ff389b048"
+	}
+}
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b04a"
+	},
+	"username": "movie_lover",
+	"text": "Great concept but a bit confusing at times.",
+	"value": 4,
+	"movie_id": {
+		"$oid": "68f4c08571726d7ff389b045"
+	}
+}

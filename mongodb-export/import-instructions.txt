@@ -1,0 +1,18 @@
+﻿# MongoDB Data Import Script
+# Run this script on your new MongoDB system
+
+# Note: Replace credentials below with your target system's credentials
+
+# Option 1: Import individual JSON files
+mongoimport --uri="mongodb://app-user:appuser123@localhost:27017/?authSource=admin" --db="movie-ratings-db" --collection="actors" --file="actors.json"
+mongoimport --uri="mongodb://app-user:appuser123@localhost:27017/?authSource=admin" --db="movie-ratings-db" --collection="movies" --file="movies.json" 
+mongoimport --uri="mongodb://app-user:appuser123@localhost:27017/?authSource=admin" --db="movie-ratings-db" --collection="reviews" --file="reviews.json"
+
+# Option 2: Restore from BSON backup (preserves all data types and indexes)
+mongorestore --uri="mongodb://app-user:appuser123@localhost:27017/?authSource=admin" --nsFrom="movie-ratings-db.*" --nsTo="movie-ratings-db.*" bson/
+
+# Option 3: Restore entire database structure
+mongorestore --uri="mongodb://app-user:appuser123@localhost:27017/?authSource=admin" full-backup/
+
+# If your target system has different credentials, update the URI accordingly:
+# Example: mongodb://your-username:your-password@your-host:27017/?authSource=admin

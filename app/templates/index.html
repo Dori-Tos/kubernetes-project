@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Rating Database</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status {
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .collection {
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .collection h3 {
+            color: #007bff;
+            margin-top: 0;
+        }
+        .sample-data {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .navigation {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .navigation a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .navigation a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Movie Rating Database</h1>
+        
+        <div class="status success">
+            ✅ Database Connection Successful
+        </div>
+        
+        <div class="navigation">
+            <a href="/actors">👥 Actors</a>
+            <a href="/reviews">⭐ Reviews</a>
+            <a href="/settings">⚙️ Settings</a>
+        </div>
+        
+        {% if collections %}
+            <h2>Database Collections ({{ collections|length }})</h2>
+            {% for collection_name in collections %}
+                <div class="collection">
+                    <h3>📁 {{ collection_name }}</h3>
+                    <p><strong>Document Count:</strong> {{ data[collection_name].count }}</p>
+                    
+                    {% if data[collection_name].sample %}
+                        <h4>Sample Data:</h4>
+                        <div class="sample-data">{{ data[collection_name].sample | tojson(indent=2) }}</div>
+                    {% else %}
+                        <p><em>No documents found in this collection.</em></p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="collection">
+                <h3>📋 Empty Database</h3>
+                <p>No collections found. The database is ready for data!</p>
+                <p>You can start by creating collections and adding movie data.</p>
+            </div>
+        {% endif %}
+        
+        <div style="margin-top: 40px; text-align: center; color: #666;">
+            <small>Connected to: movie-ratings-db</small>
+        </div>
+    </div>
+</body>
+</html>
