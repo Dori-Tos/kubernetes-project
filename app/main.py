@@ -1,11 +1,22 @@
 from flask import Flask, jsonify, render_template
 import datetime
 import os
-from pymongo import MongoClient
-from bson import ObjectId
 import json
 import logging
 from datetime import datetime
+
+# Try to import MongoDB dependencies, gracefully handle if not available (for testing)
+try:
+    from pymongo import MongoClient
+    from bson import ObjectId
+    MONGODB_AVAILABLE = True
+except ImportError:
+    # Create mock classes for testing environments
+    class MongoClient:
+        pass
+    class ObjectId:
+        pass
+    MONGODB_AVAILABLE = False
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -13,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
 # Helper function to convert ObjectId to string for JSON serialization
 def convert_objectid(obj):
     """Convert ObjectId objects to strings for JSON serialization"""
-    if isinstance(obj, ObjectId):
+    if MONGODB_AVAILABLE and isinstance(obj, ObjectId):
         return str(obj)
     elif isinstance(obj, dict):
         return {key: convert_objectid(value) for key, value in obj.items()}
