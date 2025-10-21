@@ -60,12 +60,6 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "500m"
-
-      - name: movie-rating
-        image: docker.io/library/app:1.0
-        imagePullPolicy: Never
-        ports:
-        - containerPort: 8080
         env:
         # Use the auto-generated MongoDB connection secret
         - name: MONGODB_CONNECTION_STRING
