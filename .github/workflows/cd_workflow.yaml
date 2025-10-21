@@ -1,10 +1,10 @@
-name: CI - Test App - Build and Push Docker Image
+name: CD - Test App - Build and Push Docker Image
 
 on:
   push:
-    branches: [ "dev-main" ]
+    branches: [ "production" ]
   pull_request:
-    branches: [ "dev-main" ]
+    branches: [ "production" ]
   workflow_dispatch:
 
 permissions:
@@ -13,7 +13,7 @@ permissions:
 jobs:
   test-and-commit:
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && github.event.head_commit.author.email != 'fluxcdbot@users.noreply.github.com'"
+    if: "!contains(github.event.head_commit.message, '[skip cd]') && github.event.head_commit.author.email != 'fluxcdbot@users.noreply.github.com'"
 
 
     steps:
@@ -38,37 +38,36 @@ jobs:
             pip install pytest
             PYTHONPATH=. pytest -v tests
 
-      # Commit changes on host runner
-      - name: Push to test branch after successful tests
+      # Commit changes on host runner (Git is available)
+      - name: Commit changes
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Fetch all branches
-          git fetch origin
+          # Make sure we're on production branch
+          git checkout production
           
-          # Check if test branch exists
-          if git show-ref --verify --quiet refs/remotes/origin/test; then
-            echo "Test branch exists, creating merge commit"
-            # Checkout test branch
-            git checkout -b test origin/test
-            # Merge dev-main into test
-            git merge ${{ github.sha }} --no-ff -m "Merge dev-main to test after successful tests"
-            # Push the merge
-            git push origin test
-          else
-            echo "Test branch doesn't exist, creating from dev-main"
-            git push origin HEAD:test
+          # Check if there are any changes to commit (gitignore will handle cache files)
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
           fi
           
-          echo "✅ Successfully updated test branch after tests passed"
+          git add .
           
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto-commit after successful tests [skip cd]"
+            git push origin production
+          else
+            echo "No changes to commit"
+          fi
+
   build-and-push:
     runs-on: ubuntu-latest
     needs: test-and-commit   # 👈 ensures tests must pass before build
 
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && github.event.head_commit.author.email != 'fluxcdbot@users.noreply.github.com'"
+    if: "!contains(github.event.head_commit.message, '[skip cd]') && github.event.head_commit.author.email != 'fluxcdbot@users.noreply.github.com'"
 
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +87,7 @@ jobs:
         id: version
         run: |
           # Get the latest semver tag from Docker Hub
-          REPO="arthurvb/movie-rating"
+          REPO="arthurvb/prod-movie-rating"
           
           echo "Fetching tags from Docker Hub for $REPO..."
           
@@ -126,7 +125,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          IMAGE=arthurvb/movie-rating
+          IMAGE=arthurvb/prod-movie-rating
           TAG=${{ steps.version.outputs.tag }}
           echo "Building and pushing $IMAGE:$TAG"
           docker build -t $IMAGE:$TAG .
@@ -137,3 +136,46 @@ jobs:
           docker push $IMAGE:latest
           
           echo "Successfully pushed $IMAGE:$TAG and $IMAGE:latest"
+
+  backmerge:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: success()
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Backmerge to test and dev-main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Fetch all branches
+          git fetch origin
+          
+          # Backmerge to test branch with strategy to prefer deletions
+          echo "Backmerging to test branch..."
+          git checkout -B test origin/test
+          git merge origin/production --no-ff -m "Backmerge production to test [skip ci]" -X ours || {
+            echo "Manual conflict resolution needed"
+            git status --porcelain | grep "^DU " | cut -c4- | xargs git rm
+            git add -A
+            git commit --no-edit
+          }
+          git push origin test
+          echo "✅ Backmerged to test"
+          
+          # Backmerge to dev-main branch
+          echo "Backmerging to dev-main branch..."
+          git checkout -B dev-main origin/dev-main
+          git merge origin/production --no-ff -m "Backmerge production to dev-main [skip ci]" -X ours || {
+            echo "Manual conflict resolution needed"
+            git status --porcelain | grep "^DU " | cut -c4- | xargs git rm
+            git add -A
+            git commit --no-edit
+          }
+          git push origin dev-main
+          echo "✅ Backmerged to dev-main"

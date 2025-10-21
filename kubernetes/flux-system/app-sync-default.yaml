@@ -1,11 +1,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: movie-rating
-  namespace: flux-system
+  name: app-default
+  namespace: default
 spec:
-  interval: 1m
-  path: ./kubernetes/flux-system
+  interval: 10m
+  path: "./kubernetes/app"
   prune: true
   sourceRef:
     kind: GitRepository
