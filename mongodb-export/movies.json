@@ -1,0 +1,63 @@
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b048"
+	},
+	"name": "The Dark Knight Rises",
+	"date": "2012-07-20",
+	"actor_ids": [
+		{
+			"$oid": "68f4c08571726d7ff389b03f"
+		}
+	]
+}
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b046"
+	},
+	"name": "Avengers: Endgame",
+	"date": "2019-04-26",
+	"actor_ids": [
+		{
+			"$oid": "68f4c08571726d7ff389b040"
+		},
+		{
+			"$oid": "68f4c08571726d7ff389b041"
+		},
+		{
+			"$oid": "68f4c08571726d7ff389b042"
+		}
+	]
+}
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b045"
+	},
+	"name": "Inception",
+	"date": "2010-07-16",
+	"actor_ids": [
+		{
+			"$oid": "68f4c08571726d7ff389b03d"
+		},
+		{
+			"$oid": "68f4c08571726d7ff389b03e"
+		},
+		{
+			"$oid": "68f4c08571726d7ff389b03f"
+		}
+	]
+}
+{
+	"_id": {
+		"$oid": "68f4c08571726d7ff389b047"
+	},
+	"name": "Barbie",
+	"date": "2023-07-21",
+	"actor_ids": [
+		{
+			"$oid": "68f4c08571726d7ff389b043"
+		},
+		{
+			"$oid": "68f4c08571726d7ff389b044"
+		}
+	]
+}

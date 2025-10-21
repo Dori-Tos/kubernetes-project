@@ -1,9 +1,6 @@
 .env
 venv/
 
-.env
-venv/
-
 # Python cache files
 __pycache__/
 *.py[cod]
@@ -53,3 +50,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# MongoDB Operator
+mongodb-kubernetes-operator/
