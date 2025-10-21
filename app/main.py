@@ -286,23 +286,61 @@ def get_replica_status():
         current_replicas = status.get('currentStatefulSetReplicas', 0)
         phase = status.get('phase', 'Unknown')
         
-        # Get pod status
+        # Get pod status with multiple approaches for better coverage
         pod_info = []
         try:
-            pods = core_api.list_namespaced_pod(
-                namespace="test",
-                label_selector="app=example-mongodb-svc"
-            )
+            # Try multiple label selectors to ensure we get all pods
+            selectors = [
+                "app=example-mongodb-svc",
+                "app.kubernetes.io/name=mongodb",
+                "app.kubernetes.io/instance=example-mongodb"
+            ]
             
-            for pod in pods.items:
-                pod_name = pod.metadata.name
-                pod_status = pod.status.phase
+            all_pods = {}  # Use dict to avoid duplicates
+            
+            for selector in selectors:
+                try:
+                    pods = core_api.list_namespaced_pod(
+                        namespace="test",
+                        label_selector=selector
+                    )
+                    
+                    for pod in pods.items:
+                        pod_name = pod.metadata.name
+                        if pod_name.startswith('example-mongodb-'):
+                            all_pods[pod_name] = pod
+                except Exception as selector_error:
+                    logging.warning(f"Failed to get pods with selector {selector}: {selector_error}")
+            
+            # Also try getting pods by name pattern (fallback)
+            if not all_pods:
+                try:
+                    all_pods_in_namespace = core_api.list_namespaced_pod(namespace="test")
+                    for pod in all_pods_in_namespace.items:
+                        pod_name = pod.metadata.name
+                        if pod_name.startswith('example-mongodb-'):
+                            all_pods[pod_name] = pod
+                except Exception as fallback_error:
+                    logging.warning(f"Fallback pod search failed: {fallback_error}")
+            
+            # Process all found pods
+            for pod_name, pod in all_pods.items():
+                pod_status = pod.status.phase if pod.status.phase else 'Unknown'
                 pod_ready = 'Unknown'
                 
+                # Get ready condition
                 if pod.status.conditions:
                     for condition in pod.status.conditions:
                         if condition.type == 'Ready':
                             pod_ready = condition.status
+                            break
+                
+                # Get more detailed status for pending pods
+                if pod_status == 'Pending' and pod.status.container_statuses:
+                    for container_status in pod.status.container_statuses:
+                        if container_status.state and container_status.state.waiting:
+                            waiting_reason = container_status.state.waiting.reason
+                            pod_status = f"Pending ({waiting_reason})"
                             break
                 
                 pod_info.append({
@@ -310,8 +348,21 @@ def get_replica_status():
                     'status': pod_status,
                     'ready': pod_ready
                 })
+                
+            # Sort pods by name for consistent display
+            pod_info.sort(key=lambda x: x['name'])
+            
+            logging.info(f"Found {len(pod_info)} MongoDB pods: {[p['name'] for p in pod_info]}")
+            
         except Exception as e:
-            logging.warning(f"Failed to get pod status: {e}")
+            logging.error(f"Failed to get pod status: {e}")
+            # Create placeholder entries based on expected replica count
+            for i in range(spec_members):
+                pod_info.append({
+                    'name': f'example-mongodb-{i}',
+                    'status': 'Unknown',
+                    'ready': 'Unknown'
+                })
         
         return jsonify({
             "desired_members": spec_members,

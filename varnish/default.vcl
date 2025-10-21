@@ -7,6 +7,11 @@ backend default {
 }
 
 sub vcl_recv {
+    # Never cache health dashboard and scaling API endpoints
+    if (req.url ~ "^/(health|get-replica-status|scale)") {
+        return (pass);
+    }
+    
     # Remove cookies for GET requests without session cookies
     if (req.method == "GET" && req.http.Cookie !~ "sessionid") {
         unset req.http.Cookie;
@@ -21,6 +26,15 @@ sub vcl_recv {
 }
 
 sub vcl_backend_response {
+    # Never cache health dashboard and scaling API endpoints
+    if (bereq.url ~ "^/(health|get-replica-status|scale)") {
+        set beresp.ttl = 0s;
+        set beresp.http.Cache-Control = "no-cache, no-store, must-revalidate";
+        set beresp.http.Pragma = "no-cache";
+        set beresp.http.Expires = "0";
+        return (deliver);
+    }
+    
     # Cache API endpoints for shorter time
     if (bereq.url ~ "^/(actors|reviews)") {
         set beresp.ttl = 5m;  # API endpoints cache for 5 minutes

@@ -334,6 +334,8 @@
         <script>
             let userInteracting = false;
             let statusRefreshInterval;
+            let isScaling = false;
+            let lastDesiredMembers = null;
             
             // Load replica status on page load
             document.addEventListener('DOMContentLoaded', function() {
@@ -347,18 +349,27 @@
                 });
                 
                 document.getElementById('replica-count').addEventListener('blur', function() {
-                    setTimeout(() => { userInteracting = false; }, 1000);
+                    setTimeout(() => { userInteracting = false; }, 2000);
+                });
+                
+                // Prevent selection reset during interactions
+                document.getElementById('replica-count').addEventListener('mousedown', function() {
+                    userInteracting = true;
                 });
             });
             
-            // Auto-refresh page every 2 minutes (increased due to scaling operations)
+            // Auto-refresh page every 5 minutes (reduced interference)
             setTimeout(function() {
-                window.location.reload();
-            }, 120000);
+                if (!isScaling && !userInteracting) {
+                    window.location.reload();
+                }
+            }, 300000);
             
             async function loadReplicaStatus() {
                 try {
-                    const response = await fetch('/get-replica-status');
+                    // Add cache busting to prevent stale data
+                    const cacheBuster = new Date().getTime();
+                    const response = await fetch(`/get-replica-status?_=${cacheBuster}`);
                     const data = await response.json();
                     
                     if (response.ok) {
@@ -372,32 +383,50 @@
             }
             
             function updateReplicaStatus(data) {
+                // Update scaling state
+                isScaling = data.is_scaling;
+                
+                // Track if desired members changed (indicates successful scaling request)
+                if (lastDesiredMembers !== null && lastDesiredMembers !== data.desired_members) {
+                    console.log(`Scaling detected: ${lastDesiredMembers} -> ${data.desired_members}`);
+                }
+                lastDesiredMembers = data.desired_members;
+                
                 const statusHtml = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                        <div><strong>Desired:</strong> ${data.desired_members}</div>
-                        <div><strong>Current:</strong> ${data.current_mongodb_members}</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px;">
+                        <div><strong>Desired:</strong> <span style="color: #3498db;">${data.desired_members}</span></div>
+                        <div><strong>Current:</strong> <span style="color: ${data.current_mongodb_members === data.desired_members ? '#27ae60' : '#f39c12'};">${data.current_mongodb_members}</span></div>
+                        <div><strong>Replicas:</strong> <span style="color: ${data.current_replicas === data.desired_members ? '#27ae60' : '#f39c12'};">${data.current_replicas}</span></div>
                         <div><strong>Phase:</strong> <span style="color: ${data.phase === 'Running' ? '#27ae60' : '#f39c12'}">${data.phase}</span></div>
-                        <div><strong>Status:</strong> <span style="color: ${data.is_scaling ? '#f39c12' : '#27ae60'}">${data.is_scaling ? 'Scaling' : 'Stable'}</span></div>
+                        <div><strong>Status:</strong> <span style="color: ${data.is_scaling ? '#f39c12' : '#27ae60'}">${data.is_scaling ? 'Scaling in Progress' : 'Stable'}</span></div>
+                        <div><strong>Pods Found:</strong> <span style="color: #95a5a6;">${data.pods.length}</span></div>
                     </div>
                     <div style="margin-top: 10px;">
-                        <strong>Pods:</strong>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 8px;">
-                            ${data.pods.map(pod => `
-                                <div style="background: #34495e; padding: 8px; border-radius: 3px; font-size: 0.9em;">
-                                    <div>${pod.name}</div>
+                        <strong>Pod Details:</strong>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 8px;">
+                            ${data.pods.sort((a, b) => a.name.localeCompare(b.name)).map(pod => `
+                                <div style="background: #34495e; padding: 8px; border-radius: 3px; font-size: 0.9em; border-left: 3px solid ${pod.ready === 'True' ? '#27ae60' : pod.status === 'Pending' ? '#f39c12' : '#e74c3c'};">
+                                    <div style="font-weight: bold;">${pod.name}</div>
+                                    <div style="font-size: 0.8em; color: ${pod.ready === 'True' ? '#27ae60' : pod.status === 'Pending' ? '#f39c12' : '#e74c3c'};">
+                                        Status: ${pod.status}
+                                    </div>
                                     <div style="font-size: 0.8em; color: ${pod.ready === 'True' ? '#27ae60' : '#e74c3c'};">
-                                        ${pod.status} (Ready: ${pod.ready})
+                                        Ready: ${pod.ready}
                                     </div>
                                 </div>
                             `).join('')}
                         </div>
+                        ${data.pods.length === 0 ? '<div style="color: #e74c3c; margin-top: 8px;">⚠️ No pods found</div>' : ''}
                     </div>
                 `;
                 document.getElementById('status-content').innerHTML = statusHtml;
                 
-                // Update the select box to reflect current desired state (only if user is not interacting)
-                if (!userInteracting) {
-                    const selectElement = document.getElementById('replica-count');
+                // Update the select box to reflect current desired state (more intelligent logic)
+                const selectElement = document.getElementById('replica-count');
+                const currentSelectValue = parseInt(selectElement.value);
+                
+                // Only update select if not interacting AND (no current selection OR current doesn't match desired)
+                if (!userInteracting && (!currentSelectValue || currentSelectValue !== data.desired_members)) {
                     
                     // First, remove any previously added "Current" options
                     Array.from(selectElement.options).forEach(option => {
@@ -431,6 +460,8 @@
                             selectElement.appendChild(newOption);
                         }
                     }
+                    
+                    console.log(`Updated select to: ${data.desired_members}`);
                 }
             }
             
@@ -464,18 +495,33 @@
                         resultDiv.style.color = 'white';
                         resultDiv.innerHTML = `✅ ${data.message}`;
                         
-                        // Refresh status more frequently during scaling
+                        // Set scaling state
+                        isScaling = true;
+                        
+                        // Clear existing intervals to avoid conflicts
+                        if (statusRefreshInterval) {
+                            clearInterval(statusRefreshInterval);
+                        }
+                        
+                        // More frequent refresh during scaling
+                        let scalingRefreshCount = 0;
+                        const maxRefreshes = 20; // Maximum 1 minute of frequent refreshing
+                        
                         const refreshInterval = setInterval(() => {
                             loadReplicaStatus();
+                            scalingRefreshCount++;
+                            
+                            // Stop if we've refreshed too many times or scaling completed
+                            if (scalingRefreshCount >= maxRefreshes || !isScaling) {
+                                clearInterval(refreshInterval);
+                                // Resume normal refresh interval
+                                statusRefreshInterval = setInterval(loadReplicaStatus, 10000);
+                                isScaling = false;
+                            }
                         }, 3000);
                         
-                        // Stop frequent refresh after 30 seconds
-                        setTimeout(() => {
-                            clearInterval(refreshInterval);
-                        }, 30000);
-                        
-                        // Initial refresh after 2 seconds
-                        setTimeout(loadReplicaStatus, 2000);
+                        // Initial immediate refresh
+                        setTimeout(loadReplicaStatus, 1000);
                     } else {
                         resultDiv.style.background = '#e74c3c';
                         resultDiv.style.color = 'white';
