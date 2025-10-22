@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: movie-rating
-  namespace: test
+  namespace: default
 spec:
   replicas: 3
   strategy:
