@@ -1,0 +1,62 @@
+# Step 1: Create Password Secrets (these you create manually)
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: admin-password-secret
+  namespace: default
+type: Opaque
+stringData:
+  password: "admin123"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: appuser-password-secret
+  namespace: default
+type: Opaque
+stringData:
+  password: "appuser123"
+
+---
+# Step 2: Deploy MongoDB Resource (references password secrets)
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: example-mongodb  # This becomes part of connection secret names
+  namespace: default
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.5"
+  
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  
+  users:
+    # Admin user - authenticates against 'admin' database
+    - name: admin-user
+      db: admin
+      passwordSecretRef:
+        name: admin-password-secret  # References the secret above
+      scramCredentialsSecretName: admin-user-scram  # Unique SCRAM secret name
+      roles:
+        - name: clusterAdmin
+          db: admin
+        - name: userAdminAnyDatabase
+          db: admin
+    
+    # App user - authenticates against 'admin' database but has permissions on app database
+    - name: app-user
+      db: admin
+      passwordSecretRef:
+        name: appuser-password-secret  # References the secret above
+      scramCredentialsSecretName: app-user-scram  # Unique SCRAM secret name
+      roles:
+        - name: readWrite
+          db: movie-ratings-db  # Has permissions on the application database
+
+  additionalMongodConfig:
+    storage.wiredTiger.engineConfig.journalCompressor: zlib
