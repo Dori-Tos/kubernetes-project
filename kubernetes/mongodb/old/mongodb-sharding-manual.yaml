@@ -1,0 +1,131 @@
+# Manual MongoDB Sharding Implementation with MCK
+# This approach requires deploying separate resources for each component
+
+# WARNING: This is complex and requires manual coordination
+# The MCK operator doesn't manage these as a unified sharded cluster
+
+---
+# Config Server Replica Set
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: config-server
+  namespace: default
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.5"
+  
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  
+  users:
+    - name: config-admin
+      db: admin
+      passwordSecretRef:
+        name: config-admin-password
+      scramCredentialsSecretName: config-admin-scram
+      roles:
+        - name: clusterAdmin
+          db: admin
+  
+  # Config server specific configuration
+  additionalMongodConfig:
+    sharding.clusterRole: "configsvr"
+    replication.replSetName: "configReplSet"
+
+---
+# Password secret for config server admin
+apiVersion: v1
+kind: Secret
+metadata:
+  name: config-admin-password
+  namespace: default
+type: Opaque
+stringData:
+  password: "ConfigAdmin123!"
+
+---
+# Shard 1 Replica Set
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: shard-01
+  namespace: default
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.5"
+  
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  
+  users:
+    - name: shard01-admin
+      db: admin
+      passwordSecretRef:
+        name: shard01-admin-password
+      scramCredentialsSecretName: shard01-admin-scram
+      roles:
+        - name: clusterAdmin
+          db: admin
+  
+  # Shard specific configuration
+  additionalMongodConfig:
+    sharding.clusterRole: "shardsvr"
+    replication.replSetName: "shard01ReplSet"
+
+---
+# Password secret for shard 1 admin
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shard01-admin-password
+  namespace: default
+type: Opaque
+stringData:
+  password: "Shard01Admin123!"
+
+---
+# Shard 2 Replica Set  
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: shard-02
+  namespace: default
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.5"
+  
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  
+  users:
+    - name: shard02-admin
+      db: admin
+      passwordSecretRef:
+        name: shard02-admin-password
+      scramCredentialsSecretName: shard02-admin-scram
+      roles:
+        - name: clusterAdmin
+          db: admin
+  
+  # Shard specific configuration
+  additionalMongodConfig:
+    sharding.clusterRole: "shardsvr"
+    replication.replSetName: "shard02ReplSet"
+
+---
+# Password secret for shard 2 admin
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shard02-admin-password
+  namespace: default
+type: Opaque
+stringData:
+  password: "Shard02Admin123!"
