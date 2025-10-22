@@ -10,7 +10,7 @@ apiVersion: mongodbcommunity.mongodb.com/v1
 kind: MongoDBCommunity
 metadata:
   name: config-server
-  namespace: test
+  namespace: default
 spec:
   members: 3
   type: ReplicaSet
@@ -41,7 +41,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: config-admin-password
-  namespace: test
+  namespace: default
 type: Opaque
 stringData:
   password: "ConfigAdmin123!"
@@ -52,7 +52,7 @@ apiVersion: mongodbcommunity.mongodb.com/v1
 kind: MongoDBCommunity
 metadata:
   name: shard-01
-  namespace: test
+  namespace: default
 spec:
   members: 3
   type: ReplicaSet
@@ -83,7 +83,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: shard01-admin-password
-  namespace: test
+  namespace: default
 type: Opaque
 stringData:
   password: "Shard01Admin123!"
@@ -94,7 +94,7 @@ apiVersion: mongodbcommunity.mongodb.com/v1
 kind: MongoDBCommunity
 metadata:
   name: shard-02
-  namespace: test
+  namespace: default
 spec:
   members: 3
   type: ReplicaSet
@@ -125,7 +125,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: shard02-admin-password
-  namespace: test
+  namespace: default
 type: Opaque
 stringData:
   password: "Shard02Admin123!"

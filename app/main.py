@@ -219,7 +219,7 @@ def scale_database():
             mongo_resource = custom_api.get_namespaced_custom_object(
                 group="mongodbcommunity.mongodb.com",
                 version="v1",
-                namespace="test",
+                namespace="default",
                 plural="mongodbcommunity",
                 name="example-mongodb"
             )
@@ -240,7 +240,7 @@ def scale_database():
             custom_api.patch_namespaced_custom_object(
                 group="mongodbcommunity.mongodb.com",
                 version="v1",
-                namespace="test",
+                namespace="default",
                 plural="mongodbcommunity",
                 name="example-mongodb",
                 body=patch_body
@@ -284,7 +284,7 @@ def get_replica_status():
             mongo_config = custom_api.get_namespaced_custom_object(
                 group="mongodbcommunity.mongodb.com",
                 version="v1",
-                namespace="test",
+                namespace="default",
                 plural="mongodbcommunity",
                 name="example-mongodb"
             )
@@ -313,7 +313,7 @@ def get_replica_status():
             for selector in selectors:
                 try:
                     pods = core_api.list_namespaced_pod(
-                        namespace="test",
+                        namespace="default",
                         label_selector=selector
                     )
                     
@@ -327,7 +327,7 @@ def get_replica_status():
             # Also try getting pods by name pattern (fallback)
             if not all_pods:
                 try:
-                    all_pods_in_namespace = core_api.list_namespaced_pod(namespace="test")
+                    all_pods_in_namespace = core_api.list_namespaced_pod(namespace="default")
                     for pod in all_pods_in_namespace.items:
                         pod_name = pod.metadata.name
                         if pod_name.startswith('example-mongodb-'):
