@@ -18,6 +18,7 @@ spec:
       labels:
         app: movie-rating
     spec:
+      serviceAccountName: movie-rating-sa
       # Add cache purge as init container
       initContainers:
       - name: cache-purge
