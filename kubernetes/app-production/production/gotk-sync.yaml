@@ -8,7 +8,7 @@ metadata:
 spec:
   interval: 1m0s
   ref:
-    branch: dev-main
+    branch: test
   secretRef:
     name: flux-system
   url: ssh://git@github.com/Dori-Tos/kubernetes-project
