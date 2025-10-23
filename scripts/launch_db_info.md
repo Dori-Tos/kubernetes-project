@@ -19,5 +19,5 @@ kubectl apply -n test -f .\kubernetes\mongodb\mongodb-kubernetes-operator\config
 
 kubectl apply -f .\kubernetes\mongodb\mongodb-auth-setup.yaml
 
-kubectl get secret example-mongodb-admin-admin-user -n test -o json | jq -r '.data | with_entries(.value |= @base64d)'
-kubectl get secret example-mongodb-admin-app-user -n test -o json | jq -r '.data | with_entries(.value |= @base64d)'      
+kubectl get secret example-mongodb-admin-admin-user -n default -o json | jq -r '.data | with_entries(.value |= @base64d)'
+kubectl get secret example-mongodb-admin-app-user -n default -o json | jq -r '.data | with_entries(.value |= @base64d)'      
