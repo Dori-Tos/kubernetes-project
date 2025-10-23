@@ -5,6 +5,17 @@ import json
 import logging
 from datetime import datetime
 
+# Environment configuration
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'default')
+MONGODB_RESOURCE_NAME = os.getenv('MONGODB_RESOURCE_NAME', 
+    'production-mongodb' if ENVIRONMENT == 'production' else 'example-mongodb')
+NAMESPACE = os.getenv('NAMESPACE', 
+    'production' if ENVIRONMENT == 'production' else 'default')
+
+logging.info(f"Running in environment: {ENVIRONMENT}")
+logging.info(f"MongoDB resource name: {MONGODB_RESOURCE_NAME}")
+logging.info(f"Namespace: {NAMESPACE}")
+
 # Try to import MongoDB dependencies, gracefully handle if not available (for testing)
 try:
     from pymongo import MongoClient

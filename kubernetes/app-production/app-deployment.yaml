@@ -18,6 +18,7 @@ spec:
       labels:
         app: movie-rating
     spec:
+      serviceAccountName: movie-rating-production-sa
       # Add cache purge as init container
       initContainers:
       - name: cache-purge
@@ -61,23 +62,32 @@ spec:
             memory: "128Mi"
             cpu: "500m"
         env:
-        # Use the auto-generated MongoDB connection secret
+        # Use the production MongoDB connection secret
         - name: MONGODB_CONNECTION_STRING
           valueFrom:
             secretKeyRef:
-              name: example-mongodb-admin-app-user
+              name: production-mongodb-admin-app-user
               key: connectionString.standardSrv
         # Optional: Still expose individual credentials if needed
         - name: MONGODB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: example-mongodb-admin-app-user
+              name: production-mongodb-admin-app-user
               key: username
         - name: MONGODB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: example-mongodb-admin-app-user
+              name: production-mongodb-admin-app-user
               key: password
-        # Database name for your application
+        # Database name for production
         - name: MONGODB_DATABASE
-          value: "movie-ratings-db"
+          value: "app-production"
+        # Environment identifier for the app
+        - name: ENVIRONMENT
+          value: "production"
+        # MongoDB resource name for scaling
+        - name: MONGODB_RESOURCE_NAME
+          value: "production-mongodb"
+        # Namespace for Kubernetes operations
+        - name: NAMESPACE
+          value: "production"

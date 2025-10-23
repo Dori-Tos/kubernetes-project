@@ -18,6 +18,7 @@ spec:
       labels:
         app: movie-rating
     spec:
+      serviceAccountName: movie-rating-sa
       # Add cache purge as init container
       initContainers:
       - name: cache-purge
@@ -33,7 +34,7 @@ spec:
           echo "Cache purge completed"
       containers:
       - name: movie-rating
-        image: docker.io/arthurvb/movie-rating:v1.0.24 # {"$imagepolicy": "default:movie-rating-policy"}
+        image: docker.io/arthurvb/movie-rating:v1.0.28 # {"$imagepolicy": "default:movie-rating-policy"}
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
