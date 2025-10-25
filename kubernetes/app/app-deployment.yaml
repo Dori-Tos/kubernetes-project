@@ -57,10 +57,10 @@ spec:
         resources:
           requests:
             memory: "64Mi"
-            cpu: "250m"
+            cpu: "100m"
           limits:
             memory: "128Mi"
-            cpu: "500m"
+            cpu: "250m"
         env:
         # Use the auto-generated MongoDB connection secret
         - name: MONGODB_CONNECTION_STRING
