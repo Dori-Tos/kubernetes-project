@@ -4,7 +4,7 @@ metadata:
   name: varnish-production
   namespace: production
 spec:
-  replicas: 3  # More replicas for production
+  replicas: 2 
   selector:
     matchLabels:
       app: varnish-production
@@ -34,10 +34,10 @@ spec:
         resources:
           requests:
             memory: "128Mi"
-            cpu: "100m"
+            cpu: "50m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "250m"
       volumes:
       - name: varnish-config
         configMap:

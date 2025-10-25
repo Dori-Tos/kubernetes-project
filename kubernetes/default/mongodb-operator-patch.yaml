@@ -1,0 +1,17 @@
+# MongoDB Operator Configuration Patch
+# This patch configures the MongoDB Community Operator to watch all namespaces
+# Apply with: kubectl patch deployment mongodb-kubernetes-operator -n default --patch-file mongodb-operator-patch.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-kubernetes-operator
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+      - name: mongodb-kubernetes-operator
+        env:
+        - name: WATCH_NAMESPACE
+          value: ""

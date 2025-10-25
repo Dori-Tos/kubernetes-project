@@ -4,7 +4,9 @@ kind: Kustomization
 resources:
   - app/
   - app-production/
-  - mongodb/prod/
+  - mongodb/
+  - mongodb-test/
+  - mongodb-production/
   - varnish-test/
   - varnish-production/
   - flux-system/

@@ -1,0 +1,19 @@
+# Patch to reduce MongoDB Operator resource consumption for local development
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-kubernetes-operator
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+      - name: mongodb-kubernetes-operator
+        resources:
+          limits:
+            cpu: 250m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
