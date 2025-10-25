@@ -57,27 +57,27 @@ spec:
         resources:
           requests:
             memory: "64Mi"
-            cpu: "250m"
+            cpu: "100m"
           limits:
             memory: "128Mi"
-            cpu: "500m"
+            cpu: "250m"
         env:
         # Use the production MongoDB connection secret
         - name: MONGODB_CONNECTION_STRING
           valueFrom:
             secretKeyRef:
-              name: production-mongodb-admin-app-user
+              name: production-mongodb-app-user
               key: connectionString.standardSrv
         # Optional: Still expose individual credentials if needed
         - name: MONGODB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: production-mongodb-admin-app-user
+              name: production-mongodb-app-user
               key: username
         - name: MONGODB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: production-mongodb-admin-app-user
+              name: production-mongodb-app-user
               key: password
         # Database name for production
         - name: MONGODB_DATABASE
