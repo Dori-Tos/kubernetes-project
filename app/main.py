@@ -230,9 +230,9 @@ def scale_database():
             mongo_resource = custom_api.get_namespaced_custom_object(
                 group="mongodbcommunity.mongodb.com",
                 version="v1",
-                namespace="default",
+                namespace=NAMESPACE,
                 plural="mongodbcommunity",
-                name="example-mongodb"
+                name=MONGODB_RESOURCE_NAME
             )
         except Exception as e:
             logging.error(f"Failed to get MongoDB config: {e}")
@@ -251,9 +251,9 @@ def scale_database():
             custom_api.patch_namespaced_custom_object(
                 group="mongodbcommunity.mongodb.com",
                 version="v1",
-                namespace="default",
+                namespace=NAMESPACE,
                 plural="mongodbcommunity",
-                name="example-mongodb",
+                name=MONGODB_RESOURCE_NAME,
                 body=patch_body
             )
         except Exception as e:
@@ -295,9 +295,9 @@ def get_replica_status():
             mongo_config = custom_api.get_namespaced_custom_object(
                 group="mongodbcommunity.mongodb.com",
                 version="v1",
-                namespace="default",
+                namespace=NAMESPACE,
                 plural="mongodbcommunity",
-                name="example-mongodb"
+                name=MONGODB_RESOURCE_NAME
             )
         except Exception as e:
             logging.error(f"Failed to get MongoDB config: {e}")
@@ -314,9 +314,9 @@ def get_replica_status():
         try:
             # Try multiple label selectors to ensure we get all pods
             selectors = [
-                "app=example-mongodb-svc",
+                f"app={MONGODB_RESOURCE_NAME}-svc",
                 "app.kubernetes.io/name=mongodb",
-                "app.kubernetes.io/instance=example-mongodb"
+                f"app.kubernetes.io/instance={MONGODB_RESOURCE_NAME}"
             ]
             
             all_pods = {}  # Use dict to avoid duplicates
@@ -324,13 +324,13 @@ def get_replica_status():
             for selector in selectors:
                 try:
                     pods = core_api.list_namespaced_pod(
-                        namespace="default",
+                        namespace=NAMESPACE,
                         label_selector=selector
                     )
                     
                     for pod in pods.items:
                         pod_name = pod.metadata.name
-                        if pod_name.startswith('example-mongodb-'):
+                        if pod_name.startswith(f'{MONGODB_RESOURCE_NAME}-'):
                             all_pods[pod_name] = pod
                 except Exception as selector_error:
                     logging.warning(f"Failed to get pods with selector {selector}: {selector_error}")
@@ -338,10 +338,10 @@ def get_replica_status():
             # Also try getting pods by name pattern (fallback)
             if not all_pods:
                 try:
-                    all_pods_in_namespace = core_api.list_namespaced_pod(namespace="default")
+                    all_pods_in_namespace = core_api.list_namespaced_pod(namespace=NAMESPACE)
                     for pod in all_pods_in_namespace.items:
                         pod_name = pod.metadata.name
-                        if pod_name.startswith('example-mongodb-'):
+                        if pod_name.startswith(f'{MONGODB_RESOURCE_NAME}-'):
                             all_pods[pod_name] = pod
                 except Exception as fallback_error:
                     logging.warning(f"Fallback pod search failed: {fallback_error}")
@@ -382,7 +382,7 @@ def get_replica_status():
             # Create placeholder entries based on expected replica count
             for i in range(spec_members):
                 pod_info.append({
-                    'name': f'example-mongodb-{i}',
+                    'name': f'{MONGODB_RESOURCE_NAME}-{i}',
                     'status': 'Unknown',
                     'ready': 'Unknown'
                 })
