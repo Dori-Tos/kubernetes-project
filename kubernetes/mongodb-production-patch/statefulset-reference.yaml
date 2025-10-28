@@ -1,0 +1,23 @@
+# Reference to the existing StatefulSet created by MongoDB Community Operator
+# This tells kustomize what resource exists to be patched
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: production-mongodb
+  namespace: production
+spec:
+  # Minimal spec - kustomize just needs to know this resource exists
+  # The actual spec will come from the operator, this is just a reference
+  selector:
+    matchLabels:
+      app: production-mongodb-svc
+  template:
+    metadata:
+      labels:
+        app: production-mongodb-svc
+    spec:
+      containers:
+      - name: mongod
+        image: placeholder  # Will be overridden by operator and patch
+      - name: mongodb-agent  
+        image: placeholder  # Will be overridden by operator and patch
