@@ -121,7 +121,7 @@ def home():
                 movie['avg_rating'] = 0
                 movie['review_count'] = 0
         
-        return render_template('movies.html', movies=movies)
+        return render_template('movies.html', movies=movies, environment=ENVIRONMENT)
     except Exception as e:
         logging.error(f"Error in home route: {e}")
         return jsonify({"error": str(e)}), 500    
@@ -498,11 +498,9 @@ def sync_production_data():
         prod_db = prod_client["app-production"]
         
         # Connect to test database (current environment)
-        connection_result = get_db_connection()
-        if not connection_result or len(connection_result) != 2:
+        test_db = get_db_connection()
+        if test_db is None:
             return jsonify({"error": "Could not connect to test database"}), 500
-        
-        test_client, test_db = connection_result
         
         sync_results = {
             "movies": 0,
@@ -607,9 +605,7 @@ def settings():
         }
         
         # Get database connection status
-        connection_result = get_db_connection()
-        if connection_result and len(connection_result) == 2:
-            client, db = connection_result
+        if db is not None:
             db_status = "Connected"
             
             # Get collection counts
@@ -617,7 +613,6 @@ def settings():
             try:
                 for collection_name in db.list_collection_names():
                     collections_info[collection_name] = db[collection_name].count_documents({})
-                client.close()
             except Exception as e:
                 logging.error(f"Error getting collection info: {e}")
                 collections_info = {}
