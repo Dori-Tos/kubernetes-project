@@ -19,14 +19,28 @@ logging.info(f"Namespace: {NAMESPACE}")
 # Try to import MongoDB dependencies, gracefully handle if not available (for testing)
 try:
     from pymongo import MongoClient
-    from bson import ObjectId
+    from bson.objectid import ObjectId
     MONGODB_AVAILABLE = True
 except ImportError:
     # Create mock classes for testing environments
     class MongoClient:
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
+        def __getitem__(self, key):
+            return None
+        def close(self):
+            pass
+        @property
+        def admin(self):
+            return MockAdmin()
+    
+    class MockAdmin:
+        def command(self, cmd):
+            return {"ok": 1}
+    
     class ObjectId:
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
     MONGODB_AVAILABLE = False
 
 app = Flask(__name__)
@@ -107,7 +121,7 @@ def home():
                 movie['avg_rating'] = 0
                 movie['review_count'] = 0
         
-        return render_template('movies.html', movies=movies)
+        return render_template('movies.html', movies=movies, environment=ENVIRONMENT)
     except Exception as e:
         logging.error(f"Error in home route: {e}")
         return jsonify({"error": str(e)}), 500    
@@ -398,6 +412,221 @@ def get_replica_status():
         
     except Exception as e:
         logging.error(f"Error getting replica status: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/preview-production-data')
+def preview_production_data():
+    """
+    Preview what data would be pulled from production database.
+    Shows available movies and their related data counts.
+    """
+    if ENVIRONMENT == 'production':
+        return jsonify({"error": "Data preview not available in production environment"}), 403
+    
+    try:
+        # Production MongoDB connection details
+        prod_connection_string = "mongodb://app-user:appuser123@production-mongodb-svc.production.svc.cluster.local/app-production?authSource=admin"
+        
+        # Connect to production database
+        logging.info("Connecting to production database for preview...")
+        prod_client = MongoClient(prod_connection_string)
+        prod_client.admin.command('ping')  # Test connection
+        prod_db = prod_client["app-production"]
+        
+        # Get movies with their review counts
+        movies = list(prod_db.movies.find().sort("title", 1))
+        movies_preview = []
+        
+        for movie in movies:
+            movie_id = str(movie['_id'])
+            
+            # Count reviews for this movie
+            review_count = prod_db.reviews.count_documents({"movie_id": movie_id})
+            
+            # Get actors for this movie (if movie has actor references)
+            actor_count = 0
+            if 'actors' in movie or 'cast' in movie:
+                # This depends on your data structure - adjust as needed
+                actor_count = len(movie.get('actors', movie.get('cast', [])))
+            
+            movies_preview.append({
+                "id": movie_id,
+                "title": movie.get('title', 'Unknown Title'),
+                "year": movie.get('year', 'Unknown'),
+                "genre": movie.get('genre', 'Unknown'),
+                "review_count": review_count,
+                "actor_count": actor_count
+            })
+        
+        # Get total counts
+        total_stats = {
+            "total_movies": len(movies),
+            "total_reviews": prod_db.reviews.count_documents({}),
+            "total_actors": prod_db.actors.count_documents({})
+        }
+        
+        return jsonify({
+            "movies": movies_preview,
+            "stats": total_stats
+        })
+        
+    except Exception as e:
+        logging.error(f"Error previewing production data: {e}")
+        return jsonify({"error": f"Failed to preview data: {str(e)}"}), 500
+
+@app.route('/sync-production-data', methods=['POST'])
+def sync_production_data():
+    """
+    Sync selected movies and related data from production database to test database.
+    Anonymizes reviewer names in reviews.
+    """
+    if ENVIRONMENT == 'production':
+        return jsonify({"error": "Data sync not available in production environment"}), 403
+    
+    try:
+        # Get parameters from request
+        from flask import request
+        data = request.get_json() or {}
+        movie_count = int(data.get('movie_count', 5))  # Default to 5 movies
+        
+        # Production MongoDB connection details
+        prod_connection_string = "mongodb://app-user:appuser123@production-mongodb-svc.production.svc.cluster.local/app-production?authSource=admin"
+        
+        # Connect to production database
+        logging.info("Connecting to production database...")
+        prod_client = MongoClient(prod_connection_string)
+        prod_db = prod_client["app-production"]
+        
+        # Connect to test database (current environment)
+        test_db = get_db_connection()
+        if test_db is None:
+            return jsonify({"error": "Could not connect to test database"}), 500
+        
+        sync_results = {
+            "movies": 0,
+            "reviews": 0,
+            "actors": 0,
+            "anonymized_reviewers": 0
+        }
+        
+        # 1. Get selected movies (sorted by title for consistency)
+        logging.info(f"Selecting {movie_count} movies from production...")
+        selected_movies = list(prod_db.movies.find().sort("title", 1).limit(movie_count))
+        selected_movie_ids = [str(movie['_id']) for movie in selected_movies]
+        
+        if selected_movies:
+            # Clear and insert movies
+            test_db.movies.delete_many({})
+            test_db.movies.insert_many(selected_movies)
+            sync_results["movies"] = len(selected_movies)
+        
+        # 2. Get reviews for selected movies with anonymization
+        logging.info("Syncing reviews for selected movies...")
+        reviews = list(prod_db.reviews.find({"movie_id": {"$in": selected_movie_ids}}))
+        
+        if reviews:
+            # Clear existing test reviews
+            test_db.reviews.delete_many({})
+            
+            # Anonymize reviewer names
+            anonymized_reviews = []
+            reviewer_counter = 0
+            reviewer_mapping = {}
+            
+            for review in reviews:
+                anonymized_review = review.copy()
+                
+                # Anonymize reviewer fields
+                for field in ['reviewer', 'author', 'user', 'name']:
+                    if field in review and review[field]:
+                        original_name = review[field]
+                        if original_name not in reviewer_mapping:
+                            reviewer_mapping[original_name] = f"reviewer_{reviewer_counter}"
+                            reviewer_counter += 1
+                        anonymized_review[field] = reviewer_mapping[original_name]
+                
+                anonymized_reviews.append(anonymized_review)
+            
+            # Insert anonymized reviews
+            if anonymized_reviews:
+                test_db.reviews.insert_many(anonymized_reviews)
+                sync_results["reviews"] = len(anonymized_reviews)
+                sync_results["anonymized_reviewers"] = len(reviewer_mapping)
+        
+        # 3. Get actors related to selected movies
+        logging.info("Syncing related actors...")
+        related_actor_ids = set()
+        
+        # Extract actor IDs from movies
+        for movie in selected_movies:
+            if 'actors' in movie:
+                if isinstance(movie['actors'], list):
+                    related_actor_ids.update(movie['actors'])
+            elif 'cast' in movie:
+                if isinstance(movie['cast'], list):
+                    related_actor_ids.update(movie['cast'])
+        
+        if related_actor_ids:
+            # Convert to ObjectIds if they're strings
+            try:
+                actor_object_ids = [ObjectId(aid) if isinstance(aid, str) else aid for aid in related_actor_ids]
+                related_actors = list(prod_db.actors.find({"_id": {"$in": actor_object_ids}}))
+            except:
+                # Fallback: get all actors (if actor references are not ObjectIds)
+                related_actors = list(prod_db.actors.find())
+            
+            if related_actors:
+                test_db.actors.delete_many({})
+                test_db.actors.insert_many(related_actors)
+                sync_results["actors"] = len(related_actors)
+        
+        logging.info(f"Data sync completed successfully: {sync_results}")
+        return jsonify({
+            "message": f"Successfully synced {movie_count} movies and related data",
+            "results": sync_results,
+            "selected_movies": [{"title": m.get('title', 'Unknown'), "year": m.get('year', 'Unknown')} for m in selected_movies],
+            "anonymization_note": f"Anonymized {sync_results['anonymized_reviewers']} unique reviewer names"
+        })
+        
+    except Exception as e:
+        logging.error(f"Error syncing production data: {e}")
+        return jsonify({"error": f"Failed to sync data: {str(e)}"}), 500
+
+@app.route("/settings")
+def settings():
+    """Settings and admin page"""
+    try:
+        # Get environment info
+        env_info = {
+            "environment": ENVIRONMENT,
+            "mongodb_resource": MONGODB_RESOURCE_NAME,
+            "namespace": NAMESPACE,
+            "is_test_env": ENVIRONMENT != 'production'
+        }
+        
+        # Get database connection status
+        if db is not None:
+            db_status = "Connected"
+            
+            # Get collection counts
+            collections_info = {}
+            try:
+                for collection_name in db.list_collection_names():
+                    collections_info[collection_name] = db[collection_name].count_documents({})
+            except Exception as e:
+                logging.error(f"Error getting collection info: {e}")
+                collections_info = {}
+        else:
+            db_status = "Disconnected"
+            collections_info = {}
+        
+        return render_template('settings.html', 
+                             env_info=env_info, 
+                             db_status=db_status,
+                             collections_info=collections_info)
+        
+    except Exception as e:
+        logging.error(f"Error in settings route: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":

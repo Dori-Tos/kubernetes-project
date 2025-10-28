@@ -148,6 +148,9 @@
                 <a href="/actors">Actors</a>
                 <a href="/reviews">Reviews</a>
                 <a href="/health">Health</a>
+                {% if environment != 'production' %}
+                <a href="/settings">⚙️ Settings</a>
+                {% endif %}
             </div>
         </div>
         

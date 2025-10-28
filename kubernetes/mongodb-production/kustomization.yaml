@@ -3,6 +3,6 @@ kind: Kustomization
 namespace: production
 resources:
   - mongodb-auth-setup.yaml
-  
-patchesStrategicMerge:
-  - mongodb-resource-patch.yaml
+
+# patchesStrategicMerge:
+#   - mongodb-resource-patch.yaml  # Disabled - can't patch operator-managed StatefulSet
