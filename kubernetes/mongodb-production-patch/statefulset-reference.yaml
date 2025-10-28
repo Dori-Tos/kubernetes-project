@@ -16,6 +16,7 @@ spec:
       labels:
         app: production-mongodb-svc
     spec:
+      serviceAccountName: mongodb-database-production
       containers:
       - name: mongod
         image: placeholder  # Will be overridden by operator and patch
