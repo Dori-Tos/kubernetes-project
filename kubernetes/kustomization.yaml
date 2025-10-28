@@ -6,7 +6,7 @@ resources:
   - app-production/
   - mongodb/
   - mongodb-test/
-  - mongodb-production/
+  # - mongodb-production/  # Temporarily disabled due to patch targeting issue
   - varnish-test/
   - varnish-production/
   - flux-system/
