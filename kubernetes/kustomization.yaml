@@ -6,7 +6,8 @@ resources:
   - app-production/
   - mongodb/
   - mongodb-test/
-  - mongodb-production/  # Restored - patch issue fixed
+  - mongodb-production/  # Creates the MongoDB
+  - mongodb-production-patch/  # Patches the MongoDB with resource limits
   - varnish-test/
   - varnish-production/
   - flux-system/

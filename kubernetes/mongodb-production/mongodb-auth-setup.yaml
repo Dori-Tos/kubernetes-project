@@ -130,10 +130,10 @@ spec:
   #                 memory: "64Mi"
 
    # Alternative approach - try direct resource specification
-  resources:
-    limits:
-      cpu: "250m"
-      memory: "256Mi"
-    requests:
-      cpu: "100m"
-      memory: "128Mi"
+  # resources:
+  #   limits:
+  #     cpu: "250m"
+  #     memory: "256Mi"
+  #   requests:
+  #     cpu: "100m"
+  #     memory: "128Mi"

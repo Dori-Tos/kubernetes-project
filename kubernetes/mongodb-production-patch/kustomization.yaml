@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: production
+
+# This kustomization only handles patching the existing production MongoDB StatefulSet
+# It assumes the StatefulSet already exists (created by mongodb-production/)
+
+patchesStrategicMerge:
+  - mongodb-resource-patch.yaml
+
+# We need to reference the existing StatefulSet so kustomize knows what to patch
+resources:
+  - statefulset-reference.yaml
