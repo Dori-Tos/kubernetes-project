@@ -72,12 +72,12 @@ spec:
         - name: MONGODB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: production-mongodb-app-user
+              name: production-mongodb-admin-app-user
               key: username
         - name: MONGODB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: production-mongodb-app-user
+              name: production-mongodb-admin-app-user
               key: password
         # Database name for production
         - name: MONGODB_DATABASE
