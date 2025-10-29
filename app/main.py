@@ -141,7 +141,7 @@ def actors():
             movie_count = db.movies.count_documents({"actor_ids": ObjectId(actor['_id'])})
             actor['movie_count'] = movie_count
         
-        return render_template('actors.html', actors=actors)
+        return render_template('actors.html', actors=actors, environment=ENVIRONMENT)
     except Exception as e:
         logging.error(f"Error in actors route: {e}")
         return jsonify({"error": str(e)}), 500
@@ -163,7 +163,7 @@ def reviews():
                 if movie:
                     review['movie'] = convert_objectid(movie)
 
-        return render_template('reviews.html', reviews=reviews)
+        return render_template('reviews.html', reviews=reviews, environment=ENVIRONMENT)
     except Exception as e:
         logging.error(f"Error in reviews route: {e}")
         return jsonify({"error": str(e)}), 500
@@ -200,7 +200,7 @@ def health():
                 status["database"] = {"status": "error", "error": str(e)}
                 status["overall"] = "unhealthy"
         
-        return render_template('health.html', status=status)
+        return render_template('health.html', status=status, environment=ENVIRONMENT)
     except Exception as e:
         logging.error(f"Error in health route: {e}")
         return jsonify({"error": str(e)}), 500
@@ -434,25 +434,24 @@ def preview_production_data():
         prod_db = prod_client["app-production"]
         
         # Get movies with their review counts
-        movies = list(prod_db.movies.find().sort("title", 1))
+        movies = list(prod_db.movies.find().sort("name", 1))
         movies_preview = []
         
         for movie in movies:
-            movie_id = str(movie['_id'])
+            movie_id = movie['_id']  # Keep as ObjectId for queries
             
-            # Count reviews for this movie
+            # Count reviews for this movie (reviews reference movies by ObjectId)
             review_count = prod_db.reviews.count_documents({"movie_id": movie_id})
             
-            # Get actors for this movie (if movie has actor references)
+            # Count actors for this movie (based on actor_ids array)
             actor_count = 0
-            if 'actors' in movie or 'cast' in movie:
-                # This depends on your data structure - adjust as needed
-                actor_count = len(movie.get('actors', movie.get('cast', [])))
+            if 'actor_ids' in movie and isinstance(movie['actor_ids'], list):
+                actor_count = len(movie['actor_ids'])
             
             movies_preview.append({
-                "id": movie_id,
-                "title": movie.get('title', 'Unknown Title'),
-                "year": movie.get('year', 'Unknown'),
+                "id": str(movie_id),  # Convert to string for JSON
+                "title": movie.get('name', movie.get('title', 'Unknown Title')),  # Use 'name' field as seen in data
+                "year": movie.get('date', movie.get('year', 'Unknown')),  # Use 'date' field as seen in data
                 "genre": movie.get('genre', 'Unknown'),
                 "review_count": review_count,
                 "actor_count": actor_count
@@ -509,9 +508,9 @@ def sync_production_data():
             "anonymized_reviewers": 0
         }
         
-        # 1. Get selected movies (sorted by title for consistency)
+        # 1. Get selected movies (sorted by name for consistency)
         logging.info(f"Selecting {movie_count} movies from production...")
-        selected_movies = list(prod_db.movies.find().sort("title", 1).limit(movie_count))
+        selected_movies = list(prod_db.movies.find().sort("name", 1).limit(movie_count))
         selected_movie_ids = [str(movie['_id']) for movie in selected_movies]
         
         if selected_movies:
@@ -522,7 +521,9 @@ def sync_production_data():
         
         # 2. Get reviews for selected movies with anonymization
         logging.info("Syncing reviews for selected movies...")
-        reviews = list(prod_db.reviews.find({"movie_id": {"$in": selected_movie_ids}}))
+        # Convert movie IDs to ObjectIds for the query (reviews reference movies by ObjectId)
+        selected_movie_object_ids = [ObjectId(mid) for mid in selected_movie_ids]
+        reviews = list(prod_db.reviews.find({"movie_id": {"$in": selected_movie_object_ids}}))
         
         if reviews:
             # Clear existing test reviews
@@ -557,35 +558,44 @@ def sync_production_data():
         logging.info("Syncing related actors...")
         related_actor_ids = set()
         
-        # Extract actor IDs from movies
+        # Extract actor IDs from movies (based on the actual data structure we saw)
         for movie in selected_movies:
-            if 'actors' in movie:
-                if isinstance(movie['actors'], list):
-                    related_actor_ids.update(movie['actors'])
-            elif 'cast' in movie:
-                if isinstance(movie['cast'], list):
-                    related_actor_ids.update(movie['cast'])
+            if 'actor_ids' in movie and isinstance(movie['actor_ids'], list):
+                for actor_id in movie['actor_ids']:
+                    # Handle both ObjectId format and string format
+                    if isinstance(actor_id, dict) and '$oid' in actor_id:
+                        related_actor_ids.add(ObjectId(actor_id['$oid']))
+                    elif isinstance(actor_id, str):
+                        try:
+                            related_actor_ids.add(ObjectId(actor_id))
+                        except:
+                            pass
+                    else:
+                        related_actor_ids.add(actor_id)
         
         if related_actor_ids:
-            # Convert to ObjectIds if they're strings
-            try:
-                actor_object_ids = [ObjectId(aid) if isinstance(aid, str) else aid for aid in related_actor_ids]
-                related_actors = list(prod_db.actors.find({"_id": {"$in": actor_object_ids}}))
-            except:
-                # Fallback: get all actors (if actor references are not ObjectIds)
-                related_actors = list(prod_db.actors.find())
+            related_actors = list(prod_db.actors.find({"_id": {"$in": list(related_actor_ids)}}))
             
             if related_actors:
                 test_db.actors.delete_many({})
                 test_db.actors.insert_many(related_actors)
                 sync_results["actors"] = len(related_actors)
+                logging.info(f"Synced {len(related_actors)} related actors")
+            else:
+                logging.warning("No related actors found despite having actor_ids in movies")
+        else:
+            logging.info("No actor_ids found in selected movies")
         
         logging.info(f"Data sync completed successfully: {sync_results}")
         return jsonify({
-            "message": f"Successfully synced {movie_count} movies and related data",
+            "message": f"Successfully synced {movie_count} movies and all related data",
             "results": sync_results,
-            "selected_movies": [{"title": m.get('title', 'Unknown'), "year": m.get('year', 'Unknown')} for m in selected_movies],
-            "anonymization_note": f"Anonymized {sync_results['anonymized_reviewers']} unique reviewer names"
+            "selected_movies": [{"title": m.get('name', m.get('title', 'Unknown')), "year": m.get('date', m.get('year', 'Unknown'))} for m in selected_movies],
+            "anonymization_note": f"Anonymized {sync_results['anonymized_reviewers']} unique reviewer names",
+            "relationship_details": {
+                "actors_linked": f"Synced {sync_results['actors']} actors referenced by selected movies",
+                "reviews_linked": f"Synced {sync_results['reviews']} reviews for selected movies"
+            }
         })
         
     except Exception as e:
