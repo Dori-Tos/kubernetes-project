@@ -19,6 +19,4 @@ spec:
       serviceAccountName: mongodb-database-production
       containers:
       - name: mongod
-        image: placeholder  # Will be overridden by operator and patch
-      - name: mongodb-agent  
-        image: placeholder  # Will be overridden by operator and patch
+      - name: mongodb-agent

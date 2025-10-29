@@ -7,7 +7,7 @@ resources:
   - mongodb/
   - mongodb-test/
   - mongodb-production/  # Creates the MongoDB
-  - mongodb-production-patch/  # Patches the MongoDB with resource limits
+  # - mongodb-production-patch/  # Patches the MongoDB with resource limits - temporarily disabled
   - varnish-test/
   - varnish-production/
   - flux-system/
