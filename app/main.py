@@ -522,7 +522,16 @@ def sync_production_data():
         # 2. Get reviews for selected movies with anonymization
         logging.info("Syncing reviews for selected movies...")
         # Convert movie IDs to ObjectIds for the query (reviews reference movies by ObjectId)
-        selected_movie_object_ids = [ObjectId(mid) for mid in selected_movie_ids]
+        selected_movie_object_ids = []
+        for movie in selected_movies:
+            movie_id = movie['_id']
+            if isinstance(movie_id, dict) and '$oid' in movie_id:
+                selected_movie_object_ids.append(ObjectId(movie_id['$oid']))
+            elif isinstance(movie_id, str):
+                selected_movie_object_ids.append(ObjectId(movie_id))
+            else:
+                selected_movie_object_ids.append(movie_id)
+        
         reviews = list(prod_db.reviews.find({"movie_id": {"$in": selected_movie_object_ids}}))
         
         if reviews:
@@ -537,8 +546,8 @@ def sync_production_data():
             for review in reviews:
                 anonymized_review = review.copy()
                 
-                # Anonymize reviewer fields
-                for field in ['reviewer', 'author', 'user', 'name']:
+                # Anonymize reviewer fields (check the actual field name 'username')
+                for field in ['username', 'reviewer', 'author', 'user', 'name']:
                     if field in review and review[field]:
                         original_name = review[field]
                         if original_name not in reviewer_mapping:
