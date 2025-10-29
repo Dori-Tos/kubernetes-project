@@ -24,6 +24,27 @@
             padding: 20px;
         }
         
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #3498db;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .settings-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+        
         .header {
             background: linear-gradient(135deg, #16213e, #0f3460);
             padding: 2rem 0;
@@ -139,6 +160,10 @@
     </style>
 </head>
 <body>
+    {% if environment != 'production' %}
+    <a href="/settings" class="settings-btn">⚙️ Settings</a>
+    {% endif %}
+    
     <div class="container">
         <div class="header">
             <h1>🎬 Movie Ratings Database</h1>
@@ -148,9 +173,6 @@
                 <a href="/actors">Actors</a>
                 <a href="/reviews">Reviews</a>
                 <a href="/health">Health</a>
-                {% if environment != 'production' %}
-                <a href="/settings">⚙️ Settings</a>
-                {% endif %}
             </div>
         </div>
         
