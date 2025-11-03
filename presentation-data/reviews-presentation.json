@@ -1,0 +1,11 @@
+{
+	"_id": {
+		"$oid": "70f4c08571726d7ff389b203"
+	},
+	"username": "scifi_enthusiast",
+	"text": "Stunning visuals and great adaptation of the book.",
+	"value": 4,
+	"movie_id": {
+		"$oid": "70f4c08571726d7ff389b103"
+	}
+}
