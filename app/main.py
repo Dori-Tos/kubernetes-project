@@ -141,7 +141,10 @@ def actors():
             movie_count = db.movies.count_documents({"actor_ids": ObjectId(actor['_id'])})
             actor['movie_count'] = movie_count
         
-        return render_template('actors.html', actors=actors, environment=ENVIRONMENT)
+        # Check if any actor has the 'bald' field (to conditionally show UI)
+        has_bald_field = db.actors.count_documents({"bald": {"$exists": True}}) > 0
+        
+        return render_template('actors.html', actors=actors, environment=ENVIRONMENT, has_bald_field=has_bald_field)
     except Exception as e:
         logging.error(f"Error in actors route: {e}")
         return jsonify({"error": str(e)}), 500

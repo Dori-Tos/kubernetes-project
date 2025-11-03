@@ -131,6 +131,25 @@
             padding: 8px 12px;
             border-radius: 20px;
             display: inline-block;
+            margin-bottom: 8px;
+        }
+        
+        .actor-bald {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        
+        .bald-true {
+            background: #e67e22;
+            color: white;
+        }
+        
+        .bald-false {
+            background: #27ae60;
+            color: white;
         }
         
         .no-data {
@@ -172,6 +191,11 @@
                 <div class="actor-movies">
                     🎬 {{ actor.movie_count }} movie{{ 's' if actor.movie_count != 1 else '' }}
                 </div>
+                {% if has_bald_field and actor.bald is defined %}
+                <div class="actor-bald {{ 'bald-true' if actor.bald else 'bald-false' }}">
+                    {{ '🟢 Has Hair' if not actor.bald else '🔶 Bald' }}
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
