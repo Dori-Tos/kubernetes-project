@@ -1,0 +1,44 @@
+# Kustomize patch to override MongoDB StatefulSet resource limits
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: production-mongodb
+  namespace: production
+spec:
+  template:
+    spec:
+      serviceAccountName: mongodb-database-production
+      containers:
+      - name: mongod
+        resources:
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+      - name: mongodb-agent
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+      initContainers:
+      - name: mongod-posthook
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+      - name: mongodb-agent-readinessprobe
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"

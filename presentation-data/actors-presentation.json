@@ -1,0 +1,14 @@
+{
+	"_id": {
+		"$oid": "70f4c08571726d7ff389b004"
+	},
+	"name": "Zendaya",
+	"age": 27
+}
+{
+    "_id": {
+        "$oid": "82f4c08571726d7ff389b03f"
+    },
+    "name": "Timothée Chalamet",
+    "age": 26
+}

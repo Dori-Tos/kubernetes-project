@@ -1,0 +1,28 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: movie-rating-automation
+  namespace: default
+spec:
+  suspend: false
+  interval: 1m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: test
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: |
+        chore: update movie-rating image [skip ci]
+        
+        Automation name: {{ .AutomationObject }}
+    push:
+      branch: test  # Push to same branch but with [skip ci]
+  update:
+    path: ./kubernetes/app
+    strategy: Setters

@@ -1,0 +1,15 @@
+# kubernetes/app-kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - app/
+  - app-production/
+  - mongodb/
+  - mongodb-test/
+  - mongodb-production/  # Creates the MongoDB
+  - mongodb-production-patch/  # Patches the MongoDB with resource limits
+  - varnish-test/
+  - varnish-production/
+  - flux-system/
+  - image-automation/
+  - image-automation-production/

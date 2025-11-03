@@ -1,0 +1,7 @@
+﻿# MongoDB Data Import Instructions
+
+# Note: Replace credentials below with your target system's credentials
+
+mongoimport --uri="mongodb://app-user:appuser123@localhost:27017/?authSource=admin" --db="movie-ratings-db" --collection="actors" --file="actors.json"
+mongoimport --uri="mongodb://app-user:appuser123@localhost:27017/?authSource=admin" --db="movie-ratings-db" --collection="movies" --file="movies.json" 
+mongoimport --uri="mongodb://app-user:appuser123@localhost:27017/?authSource=admin" --db="movie-ratings-db" --collection="reviews" --file="reviews.json"

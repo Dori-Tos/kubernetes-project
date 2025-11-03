@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: movie-rating
+  namespace: default
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: movie-rating
+  template:
+    metadata:
+      labels:
+        app: movie-rating
+    spec:
+      serviceAccountName: movie-rating-sa
+      # Add cache purge as init container
+      initContainers:
+      - name: cache-purge
+        image: curlimages/curl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Purging Varnish cache before starting new pods..."
+          curl -X PURGE http://varnish-service:8080/ -H "Host: movierating.local" -v || true
+          curl -X PURGE http://varnish-service:8080/actors -H "Host: movierating.local" -v || true
+          curl -X PURGE http://varnish-service:8080/reviews -H "Host: movierating.local" -v || true
+          echo "Cache purge completed"
+      containers:
+      - name: movie-rating
+        image: docker.io/arthurvb/movie-rating:v1.0.43 # {"$imagepolicy": "default:movie-rating-policy"}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "250m"
+        env:
+        # Use the auto-generated MongoDB connection secret
+        - name: MONGODB_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: example-mongodb-admin-app-user
+              key: connectionString.standardSrv
+        # Optional: Still expose individual credentials if needed
+        - name: MONGODB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: example-mongodb-admin-app-user
+              key: username
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: example-mongodb-admin-app-user
+              key: password
+        # Database name for your application
+        - name: MONGODB_DATABASE
+          value: "movie-ratings-db"

@@ -1,0 +1,139 @@
+# Production MongoDB Setup with RBAC Permissions
+---
+# Step 1: Service Account for MongoDB pods
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mongodb-database-production
+  namespace: production
+
+---
+# Step 2: Role for MongoDB service account to access secrets, configmaps, and pods
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: production
+  name: mongodb-database-production-role
+rules:
+- apiGroups: [""]
+  resources: ["secrets", "configmaps", "pods"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["mongodbcommunity.mongodb.com"]
+  resources: ["mongodbcommunity", "mongodbcommunity/status", "mongodbcommunity/spec"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+# Step 3: RoleBinding to bind the role to the service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mongodb-database-production-binding
+  namespace: production
+subjects:
+- kind: ServiceAccount
+  name: mongodb-database-production
+  namespace: production
+roleRef:
+  kind: Role
+  name: mongodb-database-production-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Step 4: Create Password Secrets (these contain the actual passwords)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: admin-password-secret
+  namespace: production
+type: Opaque
+stringData:
+  password: "admin123"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: appuser-password-secret
+  namespace: production
+type: Opaque
+stringData:
+  password: "appuser123"
+
+---
+# Step 5: Deploy MongoDB Resource (references password secrets)
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: production-mongodb  # This becomes part of connection secret names
+  namespace: production
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "6.0.5"
+  
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  
+  users:
+    # Admin user - authenticates against 'admin' database
+    - name: admin-user
+      db: admin
+      passwordSecretRef:
+        name: admin-password-secret  # References the secret above
+      scramCredentialsSecretName: admin-user-scram  # Unique SCRAM secret name
+      roles:
+        - name: clusterAdmin
+          db: admin
+        - name: userAdminAnyDatabase
+          db: admin
+    
+    # App user - authenticates against 'admin' database but has permissions on app database
+    - name: app-user
+      db: admin
+      passwordSecretRef:
+        name: appuser-password-secret  # References the secret above
+      scramCredentialsSecretName: app-user-scram  # Unique SCRAM secret name
+      roles:
+        - name: readWrite
+          db: app-production  # Has permissions on the production application database
+
+  additionalMongodConfig:
+    storage.wiredTiger.engineConfig.journalCompressor: zlib    
+    storage.wiredTiger.engineConfig.cacheSizeGB: 0.25
+    net.maxIncomingConnections: 100
+  
+  # Resource limits for production with limited resources
+  # statefulSet:
+  #   spec:
+  #     template:
+  #       spec:
+  #         containers:
+  #           - name: mongod
+  #             resources:
+  #               limits:
+  #                 cpu: "250m"
+  #                 memory: "256Mi"
+  #               requests:
+  #                 cpu: "100m" 
+  #                 memory: "128Mi"
+  #           - name: mongodb-agent
+  #             resources:
+  #               limits:
+  #                 cpu: "100m"
+  #                 memory: "128Mi"
+  #               requests:
+  #                 cpu: "50m"
+  #                 memory: "64Mi"
+
+   # Alternative approach - try direct resource specification
+  # resources:
+  #   limits:
+  #     cpu: "250m"
+  #     memory: "256Mi"
+  #   requests:
+  #     cpu: "100m"
+  #     memory: "128Mi"
