@@ -7,11 +7,11 @@ We are developping a simple flask api accessbile via web browser.
 The app uses data from an external DB.
 
 ## Structure overview
-The app is accessible from outside via Ingress (reverse proxy).
+The app is accessible from outside via Nginx.
 The app also supports memoization with Varnish
 The app is replicated to avoid downtime when updated.
 It runs on 3 pods managed by Kubernetes
 
-The DB is sharded, replicated and only accessible on the internal network.
+The DB use MongoDBCommunityOperator and is replicated.
 
-We can monitor the infrastructure from the inside with a grafana dashboard
+We can monitor the infrastructure from the inside with a grafana dashboard & the App dashboard (db only).
