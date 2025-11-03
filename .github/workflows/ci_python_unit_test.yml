@@ -45,6 +45,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
+          # Clean up any untracked files that might interfere with checkout
+          echo "Cleaning up any untracked files..."
+          git clean -fd
+          git reset --hard HEAD
+          
           # Fetch all branches
           git fetch origin
           
