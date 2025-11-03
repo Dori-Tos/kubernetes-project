@@ -54,3 +54,10 @@
 	"name": "Ryan Gosling",
 	"age": 43
 }
+{
+"_id": {
+		"$oid": "67fc08571726d7ff389b0004"
+	},
+	"name": "Bruce Willis",
+	"age": 70
+}
