@@ -34,7 +34,7 @@ spec:
           echo "Cache purge completed"
       containers:
       - name: movie-rating
-        image: docker.io/arthurvb/prod-movie-rating:v1.0.20 # {"$imagepolicy": "default:prod-movie-rating-policy"}
+        image: docker.io/arthurvb/prod-movie-rating:v1.0.28 # {"$imagepolicy": "default:prod-movie-rating-policy"}
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -66,18 +66,18 @@ spec:
         - name: MONGODB_CONNECTION_STRING
           valueFrom:
             secretKeyRef:
-              name: production-mongodb-app-user
+              name: production-mongodb-admin-app-user
               key: connectionString.standardSrv
         # Optional: Still expose individual credentials if needed
         - name: MONGODB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: production-mongodb-app-user
+              name: production-mongodb-admin-app-user
               key: username
         - name: MONGODB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: production-mongodb-app-user
+              name: production-mongodb-admin-app-user
               key: password
         # Database name for production
         - name: MONGODB_DATABASE
