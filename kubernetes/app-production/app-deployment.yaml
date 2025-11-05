@@ -34,7 +34,7 @@ spec:
           echo "Cache purge completed"
       containers:
       - name: movie-rating
-        image: docker.io/arthurvb/prod-movie-rating:v1.0.32 # {"$imagepolicy": "default:prod-movie-rating-policy"}
+        image: docker.io/arthurvb/prod-movie-rating:v1.0.33 # {"$imagepolicy": "default:prod-movie-rating-policy"}
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
